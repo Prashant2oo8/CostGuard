@@ -20,19 +20,25 @@ public class EC2Service {
     public List<EC2Instance> getAllInstances(){
         DescribeInstancesResponse response = ec2Client.describeInstances();
         List<EC2Instance> instances = new ArrayList<>();
-    for (var reservation : response.reservations()){
-        for (Instance instance: reservation.instances()){
-            instances.add(
-                    new EC2Instance(
-                            instance.instanceId(), instance.instanceTypeAsString(), instance.state().nameAsString(), 0.0
-                    )
-            );
-
-
+        for (var reservation : response.reservations()){
+            for (Instance instance: reservation.instances()){
+                instances.add(
+                        new EC2Instance(
+                                instance.instanceId(), instance.instanceTypeAsString(), instance.state().nameAsString(), calculateMonthlyCost(instance.instanceTypeAsString()))
+                );
+            }
         }
-    }
 
         return instances;
+    }
+    private double calculateMonthlyCost (String instanceType){
+        double hourlyRate = switch (instanceType){
+            case "t3.micro" -> 0.0104;
+            case "t2.micro" -> 0.0116;
+            case "t3.small" -> 0.0208;
+            default -> 0.015;
+        };
+        return hourlyRate*730;
     }
 
 

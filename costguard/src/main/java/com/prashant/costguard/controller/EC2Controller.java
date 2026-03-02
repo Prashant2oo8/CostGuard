@@ -2,7 +2,6 @@ package com.prashant.costguard.controller;
 
 import com.prashant.costguard.model.EC2Instance;
 import com.prashant.costguard.service.EC2Service;
-import org.springframework.context.annotation.ImportResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,7 +10,7 @@ import java.util.List;
 import  org.springframework.http.RequestEntity;
 
 @RestController
-@RequestMapping("/api/ec2")
+@RequestMapping("/ec2")
 
 public class EC2Controller {
     //dependency
@@ -23,6 +22,9 @@ public class EC2Controller {
     @GetMapping("/instances")
     public ResponseEntity<List<EC2Instance>> getInstances(){
         List<EC2Instance> instances = ec2Service.getAllInstances();
+        if (instances.isEmpty()){
+            return ResponseEntity.noContent().build();
+        }
         return ResponseEntity.ok(instances);
     }
 
