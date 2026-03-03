@@ -18,6 +18,7 @@ public class EC2Controller {
 
     public EC2Controller(EC2Service ec2Service){
         this.ec2Service = ec2Service;
+
     }
     @GetMapping("/instances")
     public ResponseEntity<List<EC2Instance>> getInstances(){
