@@ -5,16 +5,22 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.DescribeInstancesResponse;
 import software.amazon.awssdk.services.ec2.model.Instance;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
+import software.amazon.awssdk.services.cloudwatch.model.*;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.time.Instant;
 
 @Service
 public class EC2Service {
     private final Ec2Client ec2Client;
+    private final CloudWatchClient cloudWatchClient;
+
 
     public EC2Service(){
         this.ec2Client = Ec2Client.create();
+        this.cloudWatchClient = CloudWatchClient.create();
     }
 
     public List<EC2Instance> getAllInstances(){
@@ -22,10 +28,11 @@ public class EC2Service {
         List<EC2Instance> instances = new ArrayList<>();
         for (var reservation : response.reservations()){
             for (Instance instance: reservation.instances()){
-                instances.add(
-                        new EC2Instance(
-                                instance.instanceId(), instance.instanceTypeAsString(), instance.state().nameAsString(), calculateMonthlyCost(instance.instanceTypeAsString()))
-                );
+                double cpu = getCpuUtilization(instance.instanceId());
+                String recommendation = getRecommendation(cpu);
+                instances.add(new EC2Instance(instance.instanceId(), instance.instanceTypeAsString(), instance.state().nameAsString(), calculateMonthlyCost(instance.instanceTypeAsString()), cpu, recommendation));
+
+
             }
         }
 
@@ -41,5 +48,27 @@ public class EC2Service {
         return hourlyRate*730;
     }
 
+    private double getCpuUtilization(String instanceId){
+        Instant endTime = Instant.now();
+        Instant startTime = endTime.minusSeconds(86400);
+        GetMetricStatisticsRequest request = GetMetricStatisticsRequest.builder().namespace("AWS/EC2").metricName("CPUUtilization").dimensions(Dimension.builder().name("InstanceId").value(instanceId).build()).startTime(startTime).endTime(endTime).period(3600).statistics(Statistic.AVERAGE).build();
+
+        GetMetricStatisticsResponse response = cloudWatchClient.getMetricStatistics(request);
+
+        if (response.datapoints().isEmpty()){
+            return 0.0;
+        }
+        return response.datapoints().stream().mapToDouble(Datapoint::average).average().orElse(0.0);
+
+    }
+    private String getRecommendation(double cpu){
+        if (cpu < 10){
+            return "Consider Stopping (Underutilized)";
+        } else if (cpu < 30) {
+            return "Consider Downgrading";
+        }else {
+            return "Healthy";
+        }
+    }
 
 }
