@@ -8,12 +8,14 @@ public class ReportResponse {
     private double monthlyCost;
     private String recommendation;
     private double estimateMonthlySaving;
+    private String recommendedInstanceType;
 
-    public ReportResponse(String instanceId, String instanceType, String state, double cpuUsage, double monthlyCost, String recommendation, double estimateMonthlySaving){
+    public ReportResponse(String instanceId, String instanceType,String recommendedInstanceType, String state, double cpuUsage, double monthlyCost, String recommendation, double estimateMonthlySaving){
 
         this.instanceId = instanceId;
         this.state = state;
         this.instanceType = instanceType;
+        this.recommendedInstanceType = recommendedInstanceType;
         this.cpuUsage = cpuUsage;
         this.monthlyCost = monthlyCost;
         this.recommendation = recommendation;
@@ -27,6 +29,10 @@ public class ReportResponse {
 
     public String getInstanceType(){
         return instanceType;
+    }
+
+    public String getRecommendedInstanceType(){
+        return recommendedInstanceType;
     }
 
     public String getState(){
