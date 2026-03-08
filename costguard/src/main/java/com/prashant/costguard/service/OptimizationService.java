@@ -16,14 +16,25 @@ public class OptimizationService {
         for (EC2Instance instance : instances){
             double cpu = instance.getCpuUtilization();
             String id = instance.getInstanceId();
+            double monthlyCost = instance.getMonthlyCost();
 
             String recommendation;
+            double saving = 0;
 
-            if (cpu < 5) recommendation = "Low CPU usage detect, Consider stopping this instance";
-            else if (cpu < 20) recommendation = "Low CPU usage - Consider downgrading instance type";
-            else recommendation = "CPU usage normal";
+            if (cpu < 5) {
+                recommendation = "Low CPU usage detect, Consider stopping this instance";
+                saving = monthlyCost;
+            }
+            else if (cpu < 20){
+                recommendation = "Low CPU usage - Consider downgrading instance type";
+                saving = monthlyCost * 0.5;
+            }
+            else {
+                recommendation = "CPU usage normal";
+                saving = 0;
+            }
 
-            recommendations.add(new OptimizationRecommendation(id, recommendation, cpu));
+            recommendations.add(new OptimizationRecommendation(id, recommendation, cpu, saving));
 
         }
         return recommendations;
