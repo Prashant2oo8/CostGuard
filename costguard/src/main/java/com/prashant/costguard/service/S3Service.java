@@ -41,7 +41,13 @@ public class S3Service {
 
                 double monthlyCost = calculateCost(storageGB);
 
-                String recommendation = "Monitor storage usage";
+                String recommendation;
+
+                if (storageGB > 50) {
+                    recommendation = "Consider lifecycle policy or Glacier storage";
+                } else {
+                    recommendation = "Bucket size normal";
+                }
 
                 totalStorage += storageGB;
                 totalCost += monthlyCost;
