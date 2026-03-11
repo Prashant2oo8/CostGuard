@@ -6,6 +6,7 @@ public class Summary {
     private double potentialSavings;
     private double optimizedMonthlyCost;
     private double savingsPercentage;
+    private int efficiencyScore;
 
     public Summary(double currentMonthlyCost, double potentialSavings) {
 
@@ -15,8 +16,11 @@ public class Summary {
 
         if (currentMonthlyCost == 0) {
             this.savingsPercentage = 0;
+            this.efficiencyScore = 100;
         } else {
             this.savingsPercentage = (potentialSavings / currentMonthlyCost) * 100;
+
+            this.efficiencyScore = (int)(100 - savingsPercentage);
         }
     }
 
@@ -34,5 +38,9 @@ public class Summary {
 
     public double getSavingsPercentage() {
         return savingsPercentage;
+    }
+
+    public int getEfficiencyScore() {
+        return efficiencyScore;
     }
 }

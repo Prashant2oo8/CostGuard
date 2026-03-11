@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 
-
 @Service
 public class CloudService {
 
@@ -18,13 +17,14 @@ public class CloudService {
     private final ElbService elbService;
     private final AsgService asgService;
 
-    public CloudService(EC2Service ec2Service,
-                        EbsService ebsService,
-                        S3Service s3Service,
-                        RdsService rdsService,
-                        ElbService elbService,
-                        AsgService asgService) {
-
+    public CloudService(
+            EC2Service ec2Service,
+            EbsService ebsService,
+            S3Service s3Service,
+            RdsService rdsService,
+            ElbService elbService,
+            AsgService asgService
+    ) {
         this.ec2Service = ec2Service;
         this.ebsService = ebsService;
         this.s3Service = s3Service;
@@ -35,10 +35,12 @@ public class CloudService {
 
     public CloudReport generateReport() {
 
+        List<CostResource> expensiveResources = new ArrayList<>();
+        List<WasteResource> wasteResources = new ArrayList<>();
+
         List<EC2Instance> ec2Instances = ec2Service.getAllInstances();
 
         EbsReport ebsReport = ebsService.generateReport();
-
         S3Report s3Report = s3Service.generateReport();
 
         double ec2Cost = ec2Instances.stream()
@@ -46,7 +48,6 @@ public class CloudService {
                 .sum();
 
         double ebsCost = ebsReport.getTotalMonthlyCost();
-
         double s3Cost = s3Report.getEstimatedMonthlyCost();
 
         double currentCost = ec2Cost + ebsCost + s3Cost;
@@ -55,9 +56,25 @@ public class CloudService {
 
         for (EC2Instance instance : ec2Instances) {
 
+            expensiveResources.add(
+                    new CostResource(
+                            instance.getInstanceId(),
+                            "EC2 Instance",
+                            instance.getMonthlyCost()
+                    )
+            );
+
             if (instance.getCpuUtilization() < 10) {
 
                 potentialSavings += instance.getMonthlyCost();
+
+                wasteResources.add(
+                        new WasteResource(
+                                instance.getInstanceId(),
+                                "Low CPU Utilization",
+                                instance.getMonthlyCost()
+                        )
+                );
             }
         }
 
@@ -80,6 +97,8 @@ public class CloudService {
 
         return new CloudReport(
                 summary,
+                expensiveResources,
+                wasteResources,
                 ec2Instances,
                 ebsReport.getVolumes(),
                 s3Report.getBuckets(),
