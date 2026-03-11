@@ -5,37 +5,36 @@ public class EbsVolume {
     private String volumeId;
     private int size;
     private String state;
-    private double estimatedMonthlyCost;
+    private double monthlyCost;
     private String recommendation;
 
-    public EbsVolume(String volumeId, int size, String state, double estimatedMonthlyCost, String recommendation){
+    public EbsVolume(String volumeId, int size, String state,
+                     double monthlyCost, String recommendation) {
 
         this.volumeId = volumeId;
         this.size = size;
         this.state = state;
-        this.estimatedMonthlyCost = estimatedMonthlyCost;
+        this.monthlyCost = monthlyCost;
         this.recommendation = recommendation;
-
     }
 
-    public String getVolumeId(){
+    public String getVolumeId() {
         return volumeId;
     }
 
-    public int getSize(){
+    public int getSize() {
         return size;
     }
 
-    public String getState(){
+    public String getState() {
         return state;
     }
 
-    public double getEstimatedMonthlyCost(){
-        return estimatedMonthlyCost;
+    public double getMonthlyCost() {
+        return monthlyCost;
     }
 
-    public String getRecommendation(){
+    public String getRecommendation() {
         return recommendation;
     }
-
 }
