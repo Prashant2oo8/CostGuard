@@ -35,7 +35,9 @@ public class EbsService {
             int size = volume.size();
             String state = volume.stateAsString();
 
-            double monthlyCost = calculateMonthlyCost(size);
+            String volumeType = volume.volumeTypeAsString();
+
+            double monthlyCost = calculateMonthlyCost(size, volumeType);
 
             String recommendation;
 
@@ -53,7 +55,7 @@ public class EbsService {
             totalCost += monthlyCost;
 
             volumes.add(
-                    new EbsVolume(id, size, state, monthlyCost, recommendation)
+                    new EbsVolume(id, size, state, volumeType, monthlyCost, recommendation)
             );
         }
 
@@ -66,10 +68,38 @@ public class EbsService {
         );
     }
 
-    private double calculateMonthlyCost(int size) {
+    private double calculateMonthlyCost(int size, String volumeType){
 
-        double pricePerGB = 0.10; // approx gp3 price
+        double pricePerGB;
+
+        switch (volumeType) {
+
+            case "gp3":
+                pricePerGB = 0.08;
+                break;
+
+            case "gp2":
+                pricePerGB = 0.10;
+                break;
+
+            case "io1":
+            case "io2":
+                pricePerGB = 0.125;
+                break;
+
+            case "st1":
+                pricePerGB = 0.045;
+                break;
+
+            case "sc1":
+                pricePerGB = 0.025;
+                break;
+
+            default:
+                pricePerGB = 0.10;
+        }
 
         return size * pricePerGB;
     }
+
 }

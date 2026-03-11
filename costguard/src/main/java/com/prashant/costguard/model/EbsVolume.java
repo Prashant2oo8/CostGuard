@@ -7,13 +7,15 @@ public class EbsVolume {
     private String state;
     private double monthlyCost;
     private String recommendation;
+    private String volumeType;
 
-    public EbsVolume(String volumeId, int size, String state,
+    public EbsVolume(String volumeId, int size, String state, String volumeType,
                      double monthlyCost, String recommendation) {
 
         this.volumeId = volumeId;
         this.size = size;
         this.state = state;
+        this.volumeType = volumeType;
         this.monthlyCost = monthlyCost;
         this.recommendation = recommendation;
     }
@@ -28,6 +30,10 @@ public class EbsVolume {
 
     public String getState() {
         return state;
+    }
+
+    public String getVolumeType() {
+        return volumeType;
     }
 
     public double getMonthlyCost() {
