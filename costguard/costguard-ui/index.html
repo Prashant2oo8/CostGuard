@@ -4,6 +4,7 @@
 <head>
     <title>CostGuard Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -25,8 +26,42 @@
     <p id="optimizedCost">Loading...</p>
 </div>
 
+<div class="card">
+    <h2>Service Cost Breakdown</h2>
+    <div class="chart-container">
+        <canvas id="costChart"></canvas>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Top Expensive Resources</h2>
+    <table id="expensiveTable">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Monthly Cost</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Wasteful Resources</h2>
+    <table id="wasteTable">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Reason</th>
+            <th>Potential Saving</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
 <script src="script.js"></script>
 
 </body>
-
 </html>
