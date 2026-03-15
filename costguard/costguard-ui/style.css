@@ -63,3 +63,17 @@ th, td{
 th{
     background:#f0f0f0;
 }
+
+#efficiencyScore{
+    font-size:28px;
+    font-weight:bold;
+    color:#2c7be5;
+}
+
+ul{
+    padding-left:20px;
+}
+
+li{
+    margin-bottom:10px;
+}

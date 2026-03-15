@@ -4,6 +4,9 @@ fetch("http://localhost:8080/cloud/report")
 
     const data = result.data;
 
+    document.getElementById("efficiencyScore").innerText =
+        data.summary.efficiencyScore + "%";
+
     document.getElementById("currentCost").innerText =
         data.summary.currentMonthlyCost;
 
@@ -54,6 +57,17 @@ fetch("http://localhost:8080/cloud/report")
             <td>${resource.potentialSaving}</td>
         </tr>`;
         wasteTable.innerHTML += row;
+    });
+
+    const insightsList = document.getElementById("insightsList");
+
+    data.optimizationInsights.forEach(insight => {
+
+        const li = document.createElement("li");
+        li.innerText = insight;
+
+        insightsList.appendChild(li);
+
     });
 
 });
