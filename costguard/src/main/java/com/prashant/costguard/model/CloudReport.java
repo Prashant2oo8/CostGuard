@@ -25,6 +25,8 @@ public class CloudReport {
 
     private Object autoscaling;
 
+    private List<String> optimizationInsights;
+
     public CloudReport(
             Summary summary,
             Map<String, Double> serviceCostBreakdown,
@@ -35,7 +37,8 @@ public class CloudReport {
             List<S3Bucket> s3Buckets,
             Object rds,
             Object elb,
-            Object autoscaling
+            Object autoscaling,
+            List<String> optimizationInsights
     ) {
         this.summary = summary;
         this.serviceCostBreakdown = serviceCostBreakdown;
@@ -47,6 +50,7 @@ public class CloudReport {
         this.rds = rds;
         this.elb = elb;
         this.autoscaling = autoscaling;
+        this.optimizationInsights = optimizationInsights;
     }
 
     public Summary getSummary() {
@@ -88,4 +92,9 @@ public class CloudReport {
     public Object getAutoscaling() {
         return autoscaling;
     }
+
+    public List<String> getOptimizationInsights() {
+        return optimizationInsights;
+    }
+
 }

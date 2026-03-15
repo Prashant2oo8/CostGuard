@@ -37,6 +37,7 @@ public class CloudService {
 
         List<CostResource> expensiveResources = new ArrayList<>();
         List<WasteResource> wasteResources = new ArrayList<>();
+        List<String> insights = new ArrayList<>();
 
         List<EC2Instance> ec2Instances = ec2Service.getAllInstances();
 
@@ -79,6 +80,11 @@ public class CloudService {
                                 instance.getMonthlyCost()
                         )
                 );
+
+                insights.add(
+                        "Stop EC2 instance " + instance.getInstanceId() +
+                                " (Low CPU utilization)"
+                );
             }
         }
 
@@ -107,6 +113,21 @@ public class CloudService {
 
         if (wasteResources.size() > 5) {
             wasteResources = wasteResources.subList(0, 5);
+        }
+
+        if (ebsReport.getUnusedVolumes() > 0) {
+
+            insights.add(
+                    "Delete unused EBS volumes to save storage cost"
+            );
+        }
+
+        for (S3Bucket bucket : s3Report.getBuckets()) {
+
+            insights.add(
+                    "Monitor S3 bucket " + bucket.getBucketName() +
+                            " for lifecycle optimization"
+            );
         }
 
         Object rdsSection = rdsReport.getDatabases().isEmpty()
@@ -140,7 +161,8 @@ public class CloudService {
                 s3Report.getBuckets(),
                 rdsSection,
                 elbSection,
-                asgSection
+                asgSection,
+                insights
         );
     }
 
