@@ -10,18 +10,26 @@ public class Summary {
 
     public Summary(double currentMonthlyCost, double potentialSavings) {
 
-        this.currentMonthlyCost = currentMonthlyCost;
-        this.potentialSavings = potentialSavings;
-        this.optimizedMonthlyCost = currentMonthlyCost - potentialSavings;
+        this.currentMonthlyCost = round(currentMonthlyCost);
+        this.potentialSavings = round(potentialSavings);
+
+        this.optimizedMonthlyCost = round(currentMonthlyCost - potentialSavings);
 
         if (currentMonthlyCost == 0) {
             this.savingsPercentage = 0;
             this.efficiencyScore = 100;
         } else {
-            this.savingsPercentage = (potentialSavings / currentMonthlyCost) * 100;
 
-            this.efficiencyScore = (int)(100 - savingsPercentage);
+            double savings = (potentialSavings / currentMonthlyCost) * 100;
+
+            this.savingsPercentage = round(savings);
+
+            this.efficiencyScore = (int) Math.round(100 - savingsPercentage);
         }
+    }
+
+    private double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     public double getCurrentMonthlyCost() {
