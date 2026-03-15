@@ -61,13 +61,20 @@ public class EC2Service {
         return response.datapoints().stream().mapToDouble(Datapoint::average).average().orElse(0.0);
 
     }
+
     private String getRecommendation(double cpu){
+
         if (cpu < 10){
-            return "Consider Stopping (Underutilized)";
-        } else if (cpu < 30) {
-            return "Consider Downgrading";
-        }else {
-            return "Healthy";
+            return "Stop instance (very low CPU utilization)";
+        }
+        else if (cpu < 20){
+            return "Consider downsizing instance";
+        }
+        else if (cpu > 80){
+            return "High utilization, consider scaling";
+        }
+        else{
+            return "Instance utilization normal";
         }
     }
 

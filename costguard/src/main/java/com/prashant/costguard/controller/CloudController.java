@@ -5,6 +5,7 @@ import com.prashant.costguard.model.CloudReport;
 import com.prashant.costguard.service.CloudService;
 import org.springframework.web.bind.annotation.*;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/cloud")
 public class CloudController {
