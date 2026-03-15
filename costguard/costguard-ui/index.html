@@ -11,20 +11,25 @@
 
 <h1>CostGuard Cloud Optimization Dashboard</h1>
 
-<div class="card">
-    <h2>Current Monthly Cost</h2>
-    <p id="currentCost">Loading...</p>
+<div class="summary-container">
+
+    <div class="summary-card">
+        <h3>Current Monthly Cost</h3>
+        <p id="currentCost">Loading...</p>
+    </div>
+
+    <div class="summary-card">
+        <h3>Potential Savings</h3>
+        <p id="savings">Loading...</p>
+    </div>
+
+    <div class="summary-card">
+        <h3>Optimized Monthly Cost</h3>
+        <p id="optimizedCost">Loading...</p>
+    </div>
+
 </div>
 
-<div class="card">
-    <h2>Potential Savings</h2>
-    <p id="savings">Loading...</p>
-</div>
-
-<div class="card">
-    <h2>Optimized Monthly Cost</h2>
-    <p id="optimizedCost">Loading...</p>
-</div>
 
 <div class="card">
     <h2>Service Cost Breakdown</h2>
@@ -33,35 +38,46 @@
     </div>
 </div>
 
-<div class="card">
-    <h2>Top Expensive Resources</h2>
-    <table id="expensiveTable">
-        <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Monthly Cost</th>
-        </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</div>
 
-<div class="card">
-    <h2>Wasteful Resources</h2>
-    <table id="wasteTable">
-        <thead>
-        <tr>
-            <th>Name</th>
-            <th>Reason</th>
-            <th>Potential Saving</th>
-        </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+<div class="tables">
+
+    <div class="card">
+        <h2>Top Expensive Resources</h2>
+
+        <table id="expensiveTable">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Monthly Cost</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+    </div>
+
+
+    <div class="card">
+        <h2>Wasteful Resources</h2>
+
+        <table id="wasteTable">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Reason</th>
+                <th>Potential Saving</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+    </div>
+
 </div>
 
 <script src="script.js"></script>
 
 </body>
+
 </html>
