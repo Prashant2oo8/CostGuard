@@ -43,6 +43,10 @@ public class CloudService {
         EbsReport ebsReport = ebsService.generateReport();
         S3Report s3Report = s3Service.generateReport();
 
+        RdsReport rdsReport = rdsService.generateReport();
+        ElbReport elbReport = elbService.generateReport();
+        AsgReport asgReport = asgService.generateReport();
+
         double ec2Cost = ec2Instances.stream()
                 .mapToDouble(EC2Instance::getMonthlyCost)
                 .sum();
@@ -80,20 +84,26 @@ public class CloudService {
 
         Summary summary = new Summary(currentCost, potentialSavings);
 
-        Object rdsStatus = Map.of(
+        Object rdsSection = rdsReport.getDatabases().isEmpty()
+                ? Map.of(
                 "status", "Not Initialized",
                 "reason", "No RDS databases found in AWS account"
-        );
+        )
+                : rdsReport;
 
-        Object elbStatus = Map.of(
+        Object elbSection = elbReport.getLoadBalancers().isEmpty()
+                ? Map.of(
                 "status", "Not Initialized",
                 "reason", "No Load Balancers found"
-        );
+        )
+                : elbReport;
 
-        Object asgStatus = Map.of(
+        Object asgSection = asgReport.getGroups().isEmpty()
+                ? Map.of(
                 "status", "Not Initialized",
                 "reason", "No Auto Scaling Groups configured"
-        );
+        )
+                : asgReport;
 
         return new CloudReport(
                 summary,
@@ -102,9 +112,10 @@ public class CloudService {
                 ec2Instances,
                 ebsReport.getVolumes(),
                 s3Report.getBuckets(),
-                rdsStatus,
-                elbStatus,
-                asgStatus
+                rdsSection,
+                elbSection,
+                asgSection
         );
     }
+
 }
