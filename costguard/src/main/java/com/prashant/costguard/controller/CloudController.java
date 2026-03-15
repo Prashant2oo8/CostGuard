@@ -1,5 +1,6 @@
 package com.prashant.costguard.controller;
 
+import com.prashant.costguard.model.ApiResponse;
 import com.prashant.costguard.model.CloudReport;
 import com.prashant.costguard.service.CloudService;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,15 @@ public class CloudController {
     }
 
     @GetMapping("/report")
-    public CloudReport getReport() {
-        return cloudService.generateReport();
+    public ApiResponse<CloudReport> getReport() {
+
+        CloudReport report = cloudService.generateReport();
+
+        return new ApiResponse<>(
+                "success",
+                "Cloud report generated successfully",
+                report
+        );
     }
+
 }
