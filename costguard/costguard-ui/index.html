@@ -5,26 +5,51 @@
     <title>CostGuard Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body>
 
 <div class="layout">
+    <ul class="sidebar-menu">
 
-    <div class="sidebar">
+        <li>
+            <span class="material-icons">dashboard</span>
+            <span>Dashboard</span>
+        </li>
 
-        <h2>CostGuard</h2>
+        <li>
+            <span class="material-icons">dns</span>
+            <span>EC2 Instances</span>
+        </li>
 
-        <ul>
-            <li><a href="index.html">Dashboard</a></li>
-            <li><a href="#">EC2 Instances</a></li>
-            <li><a href="#">EBS Volumes</a></li>
-            <li><a href="#">S3 Buckets</a></li>
-            <li><a href="#">RDS Databases</a></li>
-        </ul>
+        <li>
+            <span class="material-icons">storage</span>
+            <span>EBS Volumes</span>
+        </li>
 
-    </div>
+        <li>
+            <span class="material-icons">folder</span>
+            <span>S3 Buckets</span>
+        </li>
 
+        <li>
+            <span class="material-icons">storage</span>
+            <span>RDS Databases</span>
+        </li>
+
+        <li>
+            <span class="material-icons">hub</span>
+            <span>Load Balancers</span>
+        </li>
+
+        <li>
+            <span class="material-icons">sync_alt</span>
+            <span>Auto Scaling</span>
+        </li>
+
+    </ul>
 
     <div class="main-content">
 
@@ -51,11 +76,18 @@
         </div>
 
         <!-- CHART -->
-        <div class="card">
-            <h2>Service Cost Breakdown</h2>
-            <div class="chart-container">
+        <div class="charts-container">
+
+            <div class="card chart-card">
+                <h2>Service Cost Breakdown</h2>
                 <canvas id="costChart"></canvas>
             </div>
+
+            <div class="card chart-card">
+                <h2>Cost vs Potential Savings</h2>
+                <canvas id="savingsChart"></canvas>
+            </div>
+
         </div>
 
     </div>
