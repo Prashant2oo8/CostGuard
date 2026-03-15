@@ -1,10 +1,13 @@
 package com.prashant.costguard.model;
 
 import java.util.List;
+import java.util.Map;
 
 public class CloudReport {
 
     private Summary summary;
+
+    private Map<String, Double> serviceCostBreakdown;
 
     private List<CostResource> topExpensiveResources;
 
@@ -24,6 +27,7 @@ public class CloudReport {
 
     public CloudReport(
             Summary summary,
+            Map<String, Double> serviceCostBreakdown,
             List<CostResource> topExpensiveResources,
             List<WasteResource> topWastefulResources,
             List<EC2Instance> ec2Instances,
@@ -34,6 +38,7 @@ public class CloudReport {
             Object autoscaling
     ) {
         this.summary = summary;
+        this.serviceCostBreakdown = serviceCostBreakdown;
         this.topExpensiveResources = topExpensiveResources;
         this.topWastefulResources = topWastefulResources;
         this.ec2Instances = ec2Instances;
@@ -46,6 +51,10 @@ public class CloudReport {
 
     public Summary getSummary() {
         return summary;
+    }
+
+    public Map<String, Double> getServiceCostBreakdown() {
+        return serviceCostBreakdown;
     }
 
     public List<CostResource> getTopExpensiveResources() {

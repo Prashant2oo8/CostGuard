@@ -84,6 +84,31 @@ public class CloudService {
 
         Summary summary = new Summary(currentCost, potentialSavings);
 
+        Map<String, Double> costBreakdown = Map.of(
+                "ec2", ec2Cost,
+                "ebs", ebsCost,
+                "s3", s3Cost,
+                "rds", 0.0,
+                "elb", 0.0,
+                "autoscaling", 0.0
+        );
+
+        expensiveResources.sort(
+                (a, b) -> Double.compare(b.getMonthlyCost(), a.getMonthlyCost())
+        );
+
+        if (expensiveResources.size() > 5) {
+            expensiveResources = expensiveResources.subList(0, 5);
+        }
+
+        wasteResources.sort(
+                (a, b) -> Double.compare(b.getPotentialSaving(), a.getPotentialSaving())
+        );
+
+        if (wasteResources.size() > 5) {
+            wasteResources = wasteResources.subList(0, 5);
+        }
+
         Object rdsSection = rdsReport.getDatabases().isEmpty()
                 ? Map.of(
                 "status", "Not Initialized",
@@ -107,6 +132,7 @@ public class CloudService {
 
         return new CloudReport(
                 summary,
+                costBreakdown,
                 expensiveResources,
                 wasteResources,
                 ec2Instances,
