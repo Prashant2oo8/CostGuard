@@ -9,85 +9,56 @@
 
 <body>
 
-<h1>CostGuard Cloud Optimization Dashboard</h1>
+<div class="layout">
 
-<div class="summary-container">
+    <div class="sidebar">
 
-    <div class="summary-card">
-        <h3>Current Monthly Cost</h3>
-        <p id="currentCost">Loading...</p>
-    </div>
+        <h2>CostGuard</h2>
 
-    <div class="summary-card">
-        <h3>Potential Savings</h3>
-        <p id="savings">Loading...</p>
-    </div>
-
-    <div class="summary-card">
-        <h3>Optimized Monthly Cost</h3>
-        <p id="optimizedCost">Loading...</p>
-    </div>
-
-</div>
-
-<div class="card">
-
-    <h2>Cloud Efficiency Score</h2>
-
-    <p id="efficiencyScore">Loading...</p>
-
-</div>
-
-<div class="card">
-    <h2>Service Cost Breakdown</h2>
-    <div class="chart-container">
-        <canvas id="costChart"></canvas>
-    </div>
-</div>
-
-
-<div class="tables">
-
-    <div class="card">
-        <h2>Top Expensive Resources</h2>
-
-        <table id="expensiveTable">
-            <thead>
-            <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Monthly Cost</th>
-            </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <ul>
+            <li><a href="index.html">Dashboard</a></li>
+            <li><a href="#">EC2 Instances</a></li>
+            <li><a href="#">EBS Volumes</a></li>
+            <li><a href="#">S3 Buckets</a></li>
+            <li><a href="#">RDS Databases</a></li>
+        </ul>
 
     </div>
 
 
-    <div class="card">
-        <h2>Wasteful Resources</h2>
+    <div class="main-content">
 
-        <table id="wasteTable">
-            <thead>
-            <tr>
-                <th>Name</th>
-                <th>Reason</th>
-                <th>Potential Saving</th>
-            </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <h1>Cloud Optimization Dashboard</h1>
+
+        <!-- SUMMARY CARDS -->
+        <div class="summary-container">
+
+            <div class="summary-card cost-card">
+                <h3>Current Monthly Cost</h3>
+                <p id="currentCost">Loading...</p>
+            </div>
+
+            <div class="summary-card savings-card">
+                <h3>Potential Savings</h3>
+                <p id="savings">Loading...</p>
+            </div>
+
+            <div class="summary-card optimized-card">
+                <h3>Optimized Cost</h3>
+                <p id="optimizedCost">Loading...</p>
+            </div>
+
+        </div>
+
+        <!-- CHART -->
+        <div class="card">
+            <h2>Service Cost Breakdown</h2>
+            <div class="chart-container">
+                <canvas id="costChart"></canvas>
+            </div>
+        </div>
 
     </div>
-
-</div>
-
-<div class="card">
-
-    <h2>Optimization Insights</h2>
-
-    <ul id="insightsList"></ul>
 
 </div>
 
