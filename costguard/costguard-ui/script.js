@@ -49,6 +49,35 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
 
+            const recContainer = document.getElementById("recommendationsContainer");
+
+            if (recContainer) {
+
+                data.topWastefulResources.forEach(resource => {
+
+                    const div = document.createElement("div");
+
+                    let level = "low";
+
+                    if (resource.potentialSaving > 5) level = "high";
+                    else if (resource.potentialSaving > 1) level = "medium";
+
+                    div.className = "recommendation " + level;
+
+                    div.innerHTML = `
+                        <div class="rec-left">
+                            <div class="rec-title">${resource.name}</div>
+                            <div class="rec-desc">${resource.reason}</div>
+                        </div>
+                        <div class="rec-saving">$${resource.potentialSaving}</div>
+                    `;
+
+                    recContainer.appendChild(div);
+
+                });
+
+            }
+
             /* -----------------------
                COST VS SAVINGS BAR CHART
             ----------------------- */

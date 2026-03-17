@@ -228,3 +228,43 @@ ul{
 li{
     margin-bottom:10px;
 }
+
+/* RECOMMENDATION CARD */
+
+.recommendation{
+    background:#1e293b;
+    padding:15px;
+    border-radius:8px;
+    margin-bottom:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-left:4px solid #ef4444;
+}
+
+.recommendation.medium{
+    border-left-color:#f59e0b;
+}
+
+.recommendation.low{
+    border-left-color:#22c55e;
+}
+
+.rec-left{
+    max-width:70%;
+}
+
+.rec-title{
+    font-weight:bold;
+}
+
+.rec-desc{
+    font-size:13px;
+    margin-top:5px;
+    color:#9ca3af;
+}
+
+.rec-saving{
+    color:#22c55e;
+    font-weight:bold;
+}
