@@ -5,59 +5,47 @@
     <title>CostGuard Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body>
 
 <div class="layout">
-    <ul class="sidebar-menu">
 
-        <li>
-            <span class="material-icons">dashboard</span>
-            <span>Dashboard</span>
-        </li>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <h2>CostGuard</h2>
 
-        <li>
-            <span class="material-icons">dns</span>
-            <span>EC2 Instances</span>
-        </li>
+        <ul class="sidebar-menu">
+            <li data-page="index.html">
+                <span class="material-icons">dashboard</span>
+                <span>DASHBOARD</span>
+            </li>
 
-        <li>
-            <span class="material-icons">storage</span>
-            <span>EBS Volumes</span>
-        </li>
+            <li data-page="ec2.html">
+                <span class="material-icons">dns</span>
+                <span>EC2</span>
+            </li>
 
-        <li>
-            <span class="material-icons">folder</span>
-            <span>S3 Buckets</span>
-        </li>
+            <li><span class="material-icons">storage</span><span>EBS</span></li>
+            <li><span class="material-icons">folder</span><span>S3</span></li>
+            <li><span class="material-icons">storage</span><span>RDS</span></li>
+            <li><span class="material-icons">hub</span><span>ELB</span></li>
+            <li><span class="material-icons">sync_alt</span><span>ASG</span></li>
+        </ul>
 
-        <li>
-            <span class="material-icons">storage</span>
-            <span>RDS Databases</span>
-        </li>
+        <div class="theme-toggle-container">
+            <button id="themeToggle">Dark Mode</button>
+        </div>
+    </div>
 
-        <li>
-            <span class="material-icons">hub</span>
-            <span>Load Balancers</span>
-        </li>
-
-        <li>
-            <span class="material-icons">sync_alt</span>
-            <span>Auto Scaling</span>
-        </li>
-
-    </ul>
-
+    <!-- MAIN -->
     <div class="main-content">
 
-        <h1>Cloud Optimization Dashboard</h1>
+        <h1>CLOUD OPTIMIZATION DASHBOARD</h1>
 
-        <!-- SUMMARY CARDS -->
+        <!-- SUMMARY -->
         <div class="summary-container">
-
             <div class="summary-card cost-card">
                 <h3>Current Monthly Cost</h3>
                 <p id="currentCost">Loading...</p>
@@ -72,14 +60,9 @@
                 <h3>Optimized Cost</h3>
                 <p id="optimizedCost">Loading...</p>
             </div>
-
-            <div class="top-bar">
-                <button id="themeToggle"> Dark Mode</button>
-            </div>
-
         </div>
 
-        <!-- CHART -->
+        <!-- CHARTS -->
         <div class="charts-container">
 
             <div class="card chart-card">
@@ -92,22 +75,17 @@
                 <canvas id="savingsChart"></canvas>
             </div>
 
-            <div class="card">
+        </div>
 
-                <h2>Top Recommendations</h2>
-
-                <div id="recommendationsContainer"></div>
-
-            </div>
-
+        <div class="card">
+            <h2>Top Recommendations</h2>
+            <div id="recommendationsContainer"></div>
         </div>
 
     </div>
-
 </div>
 
 <script src="script.js"></script>
 
 </body>
-
 </html>

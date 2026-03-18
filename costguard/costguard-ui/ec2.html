@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>EC2</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+        <h2>CostGuard</h2>
+
+        <ul class="sidebar-menu">
+            <li data-page="index.html">DASHBOARD</li>
+            <li data-page="ec2.html">EC2</li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <h1>EC2 INSTANCES</h1>
+
+        <div class="summary-container">
+
+            <div class="summary-card">
+                <h3>Total Instances</h3>
+                <p id="totalInstances">-</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Running</h3>
+                <p id="runningInstances">-</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Stopped</h3>
+                <p id="stoppedInstances">-</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Total Cost</h3>
+                <p id="ec2Cost">-</p>
+            </div>
+
+        </div>
+
+        <div class="card">
+            <table id="ec2Table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>TYPE</th>
+                    <th>STATE</th>
+                    <th>CPU</th>
+                    <th>COST</th>
+                    <th>RECOMMENDATION</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+
+    </div>
+
+</div>
+
+<script src="ec2.js"></script>
+
+</body>
+</html>
