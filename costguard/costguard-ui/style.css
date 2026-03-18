@@ -251,3 +251,13 @@ tr:hover {
 tbody tr td {
     vertical-align: middle;
 }
+
+
+/* for ebs */
+.badge.in-use {
+    background: #22c55e;
+}
+
+.badge.available {
+    background: #f59e0b;
+}

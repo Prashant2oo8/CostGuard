@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>EC2</title>
+    <title>EBS Volumes</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -10,6 +10,7 @@
 
 <div class="layout">
 
+    <!-- SIDEBAR -->
     <div class="sidebar">
         <h2>CostGuard</h2>
 
@@ -20,55 +21,62 @@
         </ul>
     </div>
 
+    <!-- MAIN -->
     <div class="main-content">
-        <h1>EC2 INSTANCES</h1>
 
+        <h1>EBS VOLUMES</h1>
+
+        <!-- SUMMARY -->
         <div class="summary-container">
 
             <div class="summary-card">
-                <h3>Total Instances</h3>
-                <p id="totalInstances">-</p>
+                <h3>Total Volumes</h3>
+                <p id="totalVolumes">-</p>
             </div>
 
             <div class="summary-card">
-                <h3>Running</h3>
-                <p id="runningInstances">-</p>
+                <h3>In Use</h3>
+                <p id="inUseVolumes">-</p>
             </div>
 
             <div class="summary-card">
-                <h3>Stopped</h3>
-                <p id="stoppedInstances">-</p>
+                <h3>Available</h3>
+                <p id="availableVolumes">-</p>
             </div>
 
             <div class="summary-card">
                 <h3>Total Cost</h3>
-                <p id="ec2Cost">-</p>
+                <p id="ebsCost">-</p>
             </div>
 
         </div>
 
+        <!-- TABLE -->
         <div class="card">
-            <table id="ec2Table">
+
+            <table id="ebsTable">
                 <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>VOLUME ID</th>
                     <th>TYPE</th>
                     <th>STATE</th>
-                    <th>CPU</th>
+                    <th>SIZE (GB)</th>
                     <th>COST</th>
                     <th>RECOMMENDATION</th>
                 </tr>
                 </thead>
-                <tbody></tbody>
-            </table>
-        </div>
 
+                <tbody></tbody>
+
+            </table>
+
+        </div>
 
     </div>
 
 </div>
 
-<script src="ec2.js"></script>
+<script src="ebs.js"></script>
 
 </body>
 </html>
