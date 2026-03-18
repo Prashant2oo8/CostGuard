@@ -261,3 +261,30 @@ tbody tr td {
 .badge.available {
     background: #f59e0b;
 }
+
+
+.rec-badge {
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+/* 🔴 HIGH */
+.rec-badge.high {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+/* 🟡 MEDIUM */
+.rec-badge.medium {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+/* 🟢 LOW */
+.rec-badge.low {
+    background: #dcfce7;
+    color: #166534;
+}

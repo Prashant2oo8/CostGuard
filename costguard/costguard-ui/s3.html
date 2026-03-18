@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>S3 Buckets</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <h2>CostGuard</h2>
+
+        <ul class="sidebar-menu">
+
+            <li data-page="index.html">
+                <span class="material-icons">dashboard</span>
+                <span>DASHBOARD</span>
+            </li>
+
+            <li data-page="ec2.html">
+                <span class="material-icons">dns</span>
+                <span>EC2</span>
+            </li>
+
+            <li data-page="ebs.html">
+                <span class="material-icons">storage</span>
+                <span>EBS</span>
+            </li>
+
+            <li data-page="s3.html">
+                <span class="material-icons">folder</span>
+                <span>S3</span>
+            </li>
+
+        </ul>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main-content">
+
+        <h1>S3 BUCKETS</h1>
+
+        <!-- SUMMARY -->
+        <div class="summary-container">
+
+            <div class="summary-card">
+                <h3>Total Buckets</h3>
+                <p id="totalBuckets">-</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Total Storage (GB)</h3>
+                <p id="totalStorage">-</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Total Cost</h3>
+                <p id="s3Cost">-</p>
+            </div>
+
+        </div>
+
+        <!-- TABLE -->
+        <div class="card">
+
+            <table id="s3Table">
+
+                <thead>
+                <tr>
+                    <th>BUCKET NAME</th>
+                    <th>STORAGE (GB)</th>
+                    <th>COST</th>
+                    <th>RECOMMENDATION</th>
+                </tr>
+                </thead>
+
+                <tbody></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="s3.js"></script>
+
+</body>
+</html>

@@ -34,22 +34,37 @@ public class EbsService {
             String id = volume.volumeId();
             int size = volume.size();
             String state = volume.stateAsString();
-
             String volumeType = volume.volumeTypeAsString();
 
             double monthlyCost = calculateMonthlyCost(size, volumeType);
 
             String recommendation;
 
+            /* =========================
+               SAFE OPTIMIZATION LOGIC
+            ========================= */
+
             if (state.equalsIgnoreCase("available")) {
 
-                recommendation = "Delete unused volume";
                 unusedVolumes++;
-                potentialSavings += monthlyCost;
+
+                boolean hasSnapshot = checkSnapshotExists(id);
+
+                if (hasSnapshot) {
+                    recommendation = "Unused volume — safe to delete (snapshot available)";
+                    potentialSavings += monthlyCost;
+                } else {
+                    recommendation = "Unused volume — create snapshot before deletion to avoid data loss";
+                }
 
             } else {
 
-                recommendation = "Volume in use";
+                // Additional small volume check
+                if (size < 5) {
+                    recommendation = "Small volume — review if required";
+                } else {
+                    recommendation = "Volume in use — no action required";
+                }
             }
 
             totalCost += monthlyCost;
@@ -68,6 +83,37 @@ public class EbsService {
         );
     }
 
+    /* =========================
+       SNAPSHOT DETECTION LOGIC
+    ========================= */
+    private boolean checkSnapshotExists(String volumeId) {
+
+        try {
+
+            DescribeSnapshotsRequest request = DescribeSnapshotsRequest.builder()
+                    .filters(
+                            Filter.builder()
+                                    .name("volume-id")
+                                    .values(volumeId)
+                                    .build()
+                    )
+                    .build();
+
+            DescribeSnapshotsResponse response = ec2Client.describeSnapshots(request);
+
+            return !response.snapshots().isEmpty();
+
+        } catch (Exception e) {
+
+            System.out.println("Snapshot check failed for volume: " + volumeId);
+
+            return false;
+        }
+    }
+
+    /* =========================
+       COST CALCULATION
+    ========================= */
     private double calculateMonthlyCost(int size, String volumeType){
 
         double pricePerGB;
@@ -101,5 +147,4 @@ public class EbsService {
 
         return size * pricePerGB;
     }
-
 }

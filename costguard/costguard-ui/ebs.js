@@ -56,7 +56,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         </td>
                         <td>${v.size} GB</td>
                         <td>$${v.monthlyCost}</td>
-                        <td>${v.recommendation}</td>
+                        <td>
+                            <span class="rec-badge ${getRecClass(v.recommendation)}">
+                                ${v.recommendation}
+                            </span>
+                        </td>
                     </tr>
                 `;
 
@@ -65,3 +69,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
         });
 });
+
+function getRecClass(rec) {
+
+    rec = rec.toLowerCase();
+
+    if (rec.includes("safe to delete")) return "high";
+    if (rec.includes("create snapshot")) return "medium";
+    if (rec.includes("review")) return "medium";
+
+    return "low";
+}
