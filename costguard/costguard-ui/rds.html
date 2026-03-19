@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>S3 Buckets</title>
+    <title>RDS Databases</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -10,7 +10,6 @@
 
 <div class="layout">
 
-    <!-- SIDEBAR -->
     <div class="sidebar">
         <h2>CostGuard</h2>
 
@@ -46,56 +45,18 @@
         </ul>
     </div>
 
-    <!-- MAIN -->
     <div class="main-content">
 
-        <h1>S3 BUCKETS</h1>
+        <h1>RDS DATABASES</h1>
 
-        <!-- SUMMARY -->
-        <div class="summary-container">
-
-            <div class="summary-card">
-                <h3>Total Buckets</h3>
-                <p id="totalBuckets">-</p>
-            </div>
-
-            <div class="summary-card">
-                <h3>Total Storage (GB)</h3>
-                <p id="totalStorage">-</p>
-            </div>
-
-            <div class="summary-card">
-                <h3>Total Cost</h3>
-                <p id="s3Cost">-</p>
-            </div>
-
-        </div>
-
-        <!-- TABLE -->
-        <div class="card">
-
-            <table id="s3Table">
-
-                <thead>
-                <tr>
-                    <th>BUCKET NAME</th>
-                    <th>STORAGE (GB)</th>
-                    <th>COST</th>
-                    <th>RECOMMENDATION</th>
-                </tr>
-                </thead>
-
-                <tbody></tbody>
-
-            </table>
-
-        </div>
+        <!-- MESSAGE / CONTENT -->
+        <div id="rdsContainer"></div>
 
     </div>
 
 </div>
 
-<script src="s3.js"></script>
+<script src="rds.js"></script>
 
 </body>
 </html>
