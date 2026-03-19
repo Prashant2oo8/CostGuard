@@ -37,10 +37,19 @@ function renderCharts(services, costs, savingsData) {
     if (savingsChartInstance) savingsChartInstance.destroy();
 
     costChartInstance = new Chart(document.getElementById("costChart"), {
-        type: "pie",
+        type: "doughnut",
         data: { labels: services, datasets: [{ data: costs }] },
         options: {
-            plugins: { legend: { labels: { color: colors.text } } }
+            plugins: {
+                legend: { labels: { color: colors.text } },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ": $" + context.raw;
+                        }
+                    }
+                }
+            }
         }
     });
 
@@ -49,12 +58,31 @@ function renderCharts(services, costs, savingsData) {
         data: {
             labels: services,
             datasets: [
-                { label: "Cost", data: costs, backgroundColor: "#3b82f6" },
-                { label: "Savings", data: savingsData, backgroundColor: "#22c55e" }
+                {
+                    label: "Cost",
+                    data: costs,
+                    backgroundColor: "#3b82f6",
+                    barThickness: 25
+                },
+                {
+                    label: "Savings",
+                    data: savingsData,
+                    backgroundColor: "#22c55e",
+                    barThickness: 25
+                }
             ]
         },
         options: {
-            plugins: { legend: { labels: { color: colors.text } } },
+            plugins: {
+                legend: { labels: { color: colors.text } },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ": $" + context.raw;
+                        }
+                    }
+                }
+            },
             scales: {
                 x: { ticks: { color: colors.text }, grid: { color: colors.grid } },
                 y: { ticks: { color: colors.text }, grid: { color: colors.grid } }
@@ -98,68 +126,155 @@ document.addEventListener("DOMContentLoaded", function () {
             const data = result.data;
             dashboardData = data;
 
+            // SUMMARY
             document.getElementById("currentCost").innerText = "$" + data.summary.currentMonthlyCost;
             document.getElementById("savings").innerText = "$" + data.summary.potentialSavings;
             document.getElementById("optimizedCost").innerText = "$" + data.summary.optimizedMonthlyCost;
 
+            document.getElementById("efficiencyScore").innerText =
+                data.summary.efficiencyScore + "/10";
+
+            document.getElementById("savingsPercent").innerText =
+                data.summary.savingsPercentage.toFixed(2) + "%";
+
             updateCharts(data);
 
-            // RECOMMENDATIONS
-            const container = document.getElementById("recommendationsContainer");
-            container.innerHTML = "";
+            /* =========================
+               INSIGHTS SECTION
+            ========================= */
+            const insightsContainer = document.getElementById("insightsContainer");
+
+            if (insightsContainer) {
+
+                insightsContainer.innerHTML = "";
+
+                // Normal insights
+                data.optimizationInsights.forEach(insight => {
+                    insightsContainer.innerHTML += `
+                        <div class="insight">
+                            ${insight}
+                        </div>
+                    `;
+                });
 
             /* =========================
-               1. MAIN BACKEND RECOMMENDATIONS
+               MAIN PROBLEM SERVICE
             ========================= */
 
-            if (data.topWastefulResources.length > 0) {
+            const maxService = Object.entries(data.serviceCostBreakdown)
+                    .reduce((a, b) => a[1] > b[1] ? a : b);
+
+                const serviceName = maxService[0].toUpperCase();
+
+                insightsContainer.innerHTML += `
+                    <div class="insight">
+                        Highest cost service: ${serviceName}
+                    </div>
+                `;
+            }
+
+
+            /* =========================
+               TOP EXPENSIVE RESOURCES
+            ========================= */
+
+            const expensiveContainer = document.getElementById("expensiveContainer");
+
+            if (expensiveContainer) {
+                expensiveContainer.innerHTML = "";
+
+                data.topExpensiveResources.forEach(r => {
+                    expensiveContainer.innerHTML += `
+                        <div class="recommendation high">
+                            <div>
+                                <div class="rec-title">${r.name}</div>
+                                <div class="rec-desc">${r.type}</div>
+                            </div>
+                            <div class="rec-saving">$${r.monthlyCost}</div>
+                        </div>
+                    `;
+                });
+            }
+            /* =========================
+                  TOP Wasteful  RESOURCES
+                 ========================= */
+
+
+            const wastefulContainer = document.getElementById("wastefulContainer");
+
+            if (wastefulContainer) {
+                wastefulContainer.innerHTML = "";
 
                 data.topWastefulResources.forEach(r => {
-
-                    container.innerHTML += `
-                        <div class="recommendation">
+                    wastefulContainer.innerHTML += `
+                        <div class="recommendation high">
                             <div>
-                                <div class="rec-title">${r.name.toUpperCase()}</div>
+                                <div class="rec-title">${r.name}</div>
                                 <div class="rec-desc">${r.reason}</div>
                             </div>
                             <div class="rec-saving">$${r.potentialSaving}</div>
                         </div>
                     `;
                 });
-
             }
 
             /* =========================
-               2. SUPPORTING INSIGHTS (OTHER SERVICES)
+               RECOMMENDATIONS
             ========================= */
 
-            // EBS
-            data.ebsVolumes.forEach(ebs => {
-                container.innerHTML += `
-                    <div class="recommendation low">
+            const recContainer = document.getElementById("recommendationsContainer");
+            recContainer.innerHTML = "";
+
+            // EC2
+            data.topWastefulResources.forEach(r => {
+                recContainer.innerHTML += `
+                    <div class="recommendation high">
                         <div>
-                            <div class="rec-title">EBS: ${ebs.volumeId}</div>
-                            <div class="rec-desc">${ebs.recommendation}</div>
+                            <div class="rec-title">OPTIMIZE EC2 INSTANCE</div>
+
+                            <div class="rec-desc">
+                                <b>Instance:</b> ${r.name}<br>
+                                <b>Issue:</b> ${r.reason}<br>
+                                <b>Action:</b> Stop or downsize this instance
+                            </div>
                         </div>
+
+                        <div class="rec-saving">$${r.potentialSaving}</div>
                     </div>
                 `;
             });
 
-            // S3
-            data.s3Buckets.forEach(s3 => {
-                container.innerHTML += `
-                    <div class="recommendation low">
-                        <div>
-                            <div class="rec-title">S3: ${s3.bucketName}</div>
-                            <div class="rec-desc">${s3.recommendation}</div>
+            // EBS
+            data.ebsVolumes.forEach(v => {
+                if (v.state === "available") {
+                    recContainer.innerHTML += `
+                        <div class="recommendation medium">
+                            <div>
+                                <div class="rec-title">EBS: ${v.volumeId}</div>
+                                <div class="rec-desc">${v.recommendation}</div>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
+            });
+
+            // S3
+            data.s3Buckets.forEach(b => {
+                if (b.storageGB > 5) {
+                    recContainer.innerHTML += `
+                        <div class="recommendation low">
+                            <div>
+                                <div class="rec-title">S3: ${b.bucketName}</div>
+                                <div class="rec-desc">${b.recommendation}</div>
+                            </div>
+                        </div>
+                    `;
+                }
             });
 
             // RDS / ELB / ASG
             if (data.rds?.status === "Not Initialized") {
-                container.innerHTML += `
+                recContainer.innerHTML += `
                     <div class="recommendation low">
                         <div>
                             <div class="rec-title">RDS</div>
@@ -170,7 +285,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (data.elb?.status === "Not Initialized") {
-                container.innerHTML += `
+                recContainer.innerHTML += `
                     <div class="recommendation low">
                         <div>
                             <div class="rec-title">ELB</div>
@@ -181,7 +296,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (data.autoscaling?.status === "Not Initialized") {
-                container.innerHTML += `
+                recContainer.innerHTML += `
                     <div class="recommendation low">
                         <div>
                             <div class="rec-title">AUTO SCALING</div>
@@ -191,12 +306,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 `;
             }
 
-            /* =========================
-               3. FALLBACK MESSAGE
-            ========================= */
-
-            if (data.topWastefulResources.length === 0) {
-                container.innerHTML += `
+            // FALLBACK
+            if (recContainer.innerHTML === "") {
+                recContainer.innerHTML = `
                     <div class="recommendation low">
                         <div>
                             <div class="rec-title">NO MAJOR OPTIMIZATION NEEDED</div>
@@ -212,16 +324,16 @@ document.addEventListener("DOMContentLoaded", function () {
 // UPDATE CHARTS
 function updateCharts(data) {
 
-    const services = Object.keys(data.serviceCostBreakdown);
-    const costs = Object.values(data.serviceCostBreakdown);
+    const entries = Object.entries(data.serviceCostBreakdown)
+        .sort((a, b) => b[1] - a[1]); // descending order
+
+    const services = entries.map(e => e[0]);
+    const costs = entries.map(e => e[1]);
 
     const savingsData = services.map(service => {
-
-        // Only EC2 has real savings
         if (service === "ec2") {
             return data.summary.potentialSavings;
         }
-
         return 0;
     });
 

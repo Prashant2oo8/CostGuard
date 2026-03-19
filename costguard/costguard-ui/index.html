@@ -58,20 +58,32 @@
 
         <!-- SUMMARY -->
         <div class="summary-container">
+
             <div class="summary-card cost-card">
                 <h3>Current Monthly Cost</h3>
-                <p id="currentCost">Loading...</p>
+                <p id="currentCost">-</p>
             </div>
 
             <div class="summary-card savings-card">
                 <h3>Potential Savings</h3>
-                <p id="savings">Loading...</p>
+                <p id="savings">-</p>
             </div>
 
             <div class="summary-card optimized-card">
                 <h3>Optimized Cost</h3>
-                <p id="optimizedCost">Loading...</p>
+                <p id="optimizedCost">-</p>
             </div>
+
+            <div class="summary-card efficiency-card">
+                <h3>Efficiency Score</h3>
+                <p id="efficiencyScore">-</p>
+            </div>
+
+            <div class="summary-card percent-card">
+                <h3>Savings %</h3>
+                <p id="savingsPercent">-</p>
+            </div>
+
         </div>
 
         <!-- CHARTS -->
@@ -91,7 +103,34 @@
 
         <div class="card">
             <h2>Top Recommendations</h2>
-            <div id="recommendationsContainer"></div>
+            <div class="card">
+                <h2>Optimization Insights</h2>
+                <div id="insightsContainer"></div>
+            </div>
+
+            <div class="card">
+                <h2>Top Recommendations</h2>
+
+                <div class="card">
+                    <h2>Optimization Insights</h2>
+                    <div id="insightsContainer"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Top Expensive Resources</h2>
+                    <div id="expensiveContainer"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Top Wasteful Resources</h2>
+                    <div id="wastefulContainer"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Recommendations</h2>
+                    <div id="recommendationsContainer"></div>
+                </div>
+            </div>
         </div>
 
     </div>

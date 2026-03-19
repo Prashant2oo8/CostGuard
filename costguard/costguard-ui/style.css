@@ -58,20 +58,21 @@ body {
 }
 
 .sidebar-menu li:hover {
-    background: #60a5fa; /* light blue */
+    background: #60a5fa;
     color: white;
 }
 
 .sidebar-menu li:hover span {
-    color: white !important;
+    color: inherit;
 }
 
 .sidebar-menu li.active {
     background: #3b82f6;
+    color: white;
 }
 
 .sidebar-menu li.active span {
-    color: white !important;
+    color: inherit;
 }
 
 /* MAIN */
@@ -88,6 +89,15 @@ body {
     border-radius: 8px;
     border: 1px solid var(--border);
     margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+body.dark .card {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.card h2 {
+    margin-bottom: 15px;
 }
 
 /* SUMMARY */
@@ -95,6 +105,7 @@ body {
     display: flex;
     gap: 20px;
     margin-bottom: 30px;
+    flex-wrap: wrap;
 }
 
 .summary-card {
@@ -103,6 +114,8 @@ body {
     padding: 20px;
     border-radius: 8px;
     border: 1px solid var(--border);
+    min-width: 180px;
+    transition: 0.2s;
 }
 
 .summary-card p {
@@ -110,9 +123,11 @@ body {
     font-weight: bold;
 }
 
-.cost-card { border-left: 6px solid #ef4444; }
-.savings-card { border-left: 6px solid #22c55e; }
-.optimized-card { border-left: 6px solid #3b82f6; }
+
+.summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
 
 /* CHARTS */
 .charts-container {
@@ -124,16 +139,16 @@ body {
 
 .chart-card {
     flex: 1;
-    min-width: 350px;
-    max-width: 500px;
-    height: 350px;
+    min-width: 300px;
+    max-width: 450px;
+    min-height: 280px;
     display: flex;
     flex-direction: column;
 }
 
 .chart-card canvas {
     flex: 1;
-    max-height: 300px;
+    max-height: 220px;
 }
 
 /* TABLE */
@@ -150,6 +165,7 @@ th {
     background: #3b82f6;
     color: white;
     font-size: 14px;
+    letter-spacing: 0.5px;
 }
 
 /* DATA */
@@ -181,11 +197,16 @@ tr:hover {
 }
 
 /* RECOMMENDATION */
+
 .recommendation {
-    padding: 15px;
-    border-left: 4px solid #ef4444;
-    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-radius: 6px;
     background: var(--card);
+    border-left: 5px solid #ef4444;
+    margin-bottom: 10px;
 }
 
 .rec-saving {
@@ -209,25 +230,17 @@ tr:hover {
 }
 
 
-.recommendation {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-left: 5px solid #ef4444;
-}
-
-
 .rec-title {
     font-weight: bold;
-    margin-bottom: 4px;
+    font-size: 15px;
+    margin-bottom: 6px;
 }
 
 .rec-desc {
-    font-size: 14px;       /* same as table */
-    color: var(--text);    /* same color as others */
-    font-weight: normal;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.5;
 }
-
 
 .badge {
     padding: 4px 8px;
@@ -288,3 +301,28 @@ tbody tr td {
     background: #dcfce7;
     color: #166534;
 }
+
+
+.insight {
+    background: var(--card);
+    padding: 12px;
+    border-left: 4px solid #3b82f6;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+
+
+.efficiency-card {
+    border-left: 6px solid #8b5cf6; /* purple */
+}
+
+.percent-card {
+    border-left: 6px solid #f59e0b; /* orange */
+}
+
+
+.cost-card { border-left: 5px solid #ef4444; }
+.savings-card { border-left: 5px solid #22c55e; }
+.optimized-card { border-left: 5px solid #3b82f6; }
