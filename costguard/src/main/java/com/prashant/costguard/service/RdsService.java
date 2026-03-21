@@ -46,7 +46,7 @@ public class RdsService {
             double cpu = getMetric(id, "CPUUtilization");
             double connections = getMetric(id, "DatabaseConnections");
 
-            String recommendation = generateRecommendation(cpu, connections);
+            String recommendation = generateRecommendation(cpu, connections, monthlyCost);
 
             totalCost += monthlyCost;
 
@@ -93,35 +93,55 @@ public class RdsService {
                     cloudWatchClient.getMetricStatistics(request);
 
             if (!response.datapoints().isEmpty()) {
-                return response.datapoints().get(0).average();
+                return response.datapoints().stream()
+                        .mapToDouble(Datapoint::average)
+                        .average()
+                        .orElse(-1);
             }
 
         } catch (Exception e) {
             System.out.println("CloudWatch error for RDS: " + dbId);
         }
 
-        return 0; // fallback
+        return -1; // fallback
     }
 
     /* OPTIMIZATION LOGIC */
-    private String generateRecommendation(double cpu, double connections) {
+    private String generateRecommendation(double cpu, double connections, double cost) {
 
-        //  Idle
+        String recommendation;
+
+        // No data case
+        if (cpu == -1 || connections == -1) {
+            return "No monitoring data available - verify RDS metrics before taking action";
+        }
+
+        // Idle database
         if (cpu < 5 && connections < 5) {
-            return "Idle database — consider stopping or downsizing";
+            recommendation = "Idle database - consider stopping or downsizing";
         }
 
-        //  Underutilized
-        if (cpu < 20) {
-            return "Underutilized — consider smaller instance";
+        // Low usage
+        else if (cpu < 20 && connections < 20) {
+            recommendation = "Low utilization - consider smaller instance";
         }
 
-        //  Healthy
-        if (cpu >= 40) {
-            return "Healthy usage — no action required";
+        // High usage
+        else if (cpu > 80 || connections > 100) {
+            recommendation = "High load - consider scaling database";
         }
 
-        return "Monitor usage";
+        // Healthy
+        else {
+            recommendation = "Database usage is optimal";
+        }
+
+        // Cost priority
+        if (cost > 50) {
+            recommendation += " | High cost database - prioritize optimization";
+        }
+
+        return recommendation;
     }
 
     /* COST ESTIMATION */
@@ -131,8 +151,10 @@ public class RdsService {
             return 15;
         } else if (instanceClass.contains("small")) {
             return 30;
+        } else if (instanceClass.contains("medium")) {
+            return 50;
         } else {
-            return 60;
+            return 80;
         }
     }
 }

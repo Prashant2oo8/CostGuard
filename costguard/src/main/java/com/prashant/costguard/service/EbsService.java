@@ -7,13 +7,15 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class EbsService {
 
     private final Ec2Client ec2Client;
+
+    // Cache for instance states to reduce API calls
+    private final Map<String, String> instanceStateCache = new HashMap<>();
 
     public EbsService() {
         this.ec2Client = Ec2Client.create();
@@ -38,11 +40,7 @@ public class EbsService {
 
             double monthlyCost = calculateMonthlyCost(size, volumeType);
 
-            String recommendation;
-
-            /* =========================
-               SAFE OPTIMIZATION LOGIC
-            ========================= */
+            String recommendation = "No recommendation available";
 
             if (state.equalsIgnoreCase("available")) {
 
@@ -51,20 +49,59 @@ public class EbsService {
                 boolean hasSnapshot = checkSnapshotExists(id);
 
                 if (hasSnapshot) {
-                    recommendation = "Unused volume — safe to delete (snapshot available)";
+                    recommendation = "Unused volume - safe to delete (snapshot available)";
                     potentialSavings += monthlyCost;
                 } else {
-                    recommendation = "Unused volume — create snapshot before deletion to avoid data loss";
+                    recommendation = "Unused volume - create snapshot before deletion";
+                }
+
+            } else if (state.equalsIgnoreCase("in-use")) {
+
+                String instanceId = null;
+
+                if (!volume.attachments().isEmpty()) {
+                    for (VolumeAttachment attachment : volume.attachments()) {
+                        if (attachment.instanceId() != null) {
+                            instanceId = attachment.instanceId();
+                            break;
+                        }
+                    }
+                }
+
+                if (instanceId != null) {
+
+                    String instanceState = getCachedInstanceState(instanceId);
+
+                    if (instanceState.equalsIgnoreCase("stopped")) {
+
+                        recommendation = "Attached to stopped instance - if used regularly no action needed, otherwise consider snapshot and delete";
+
+                    }else if(instanceState.equalsIgnoreCase("running")) {
+
+                        if (size > 100) {
+                            recommendation = "Large volume - consider downsizing";
+
+                        } else if (size < 5) {
+                            recommendation = "Very small volume - verify if required";
+
+                        } else {
+                            recommendation = "Volume actively used by running instance";
+                        }
+
+                    }else {
+                        recommendation = "Unknown instance state - review manually";
+                    }
+
+                } else {
+                    recommendation = "Volume attached but instance not found - review";
                 }
 
             } else {
+                recommendation = "Unknown volume state - manual review required";
+            }
 
-                // Additional small volume check
-                if (size < 5) {
-                    recommendation = "Small volume — review if required";
-                } else {
-                    recommendation = "Volume in use — no action required";
-                }
+            if (monthlyCost > 50) {
+                recommendation += " | High cost volume - prioritize optimization";
             }
 
             totalCost += monthlyCost;
@@ -83,9 +120,20 @@ public class EbsService {
         );
     }
 
-    /* =========================
-       SNAPSHOT DETECTION LOGIC
-    ========================= */
+    // Cached instance state lookup
+    private String getCachedInstanceState(String instanceId) {
+
+        if (instanceStateCache.containsKey(instanceId)) {
+            return instanceStateCache.get(instanceId);
+        }
+
+        String state = getInstanceState(instanceId);
+        instanceStateCache.put(instanceId, state);
+
+        return state;
+    }
+
+    // Snapshot detection
     private boolean checkSnapshotExists(String volumeId) {
 
         try {
@@ -104,16 +152,36 @@ public class EbsService {
             return !response.snapshots().isEmpty();
 
         } catch (Exception e) {
-
-            System.out.println("Snapshot check failed for volume: " + volumeId);
-
+            System.err.println("Snapshot check failed for volume: " + volumeId);
             return false;
         }
     }
 
-    /* =========================
-       COST CALCULATION
-    ========================= */
+    // Instance state check
+    private String getInstanceState(String instanceId) {
+
+        try {
+            DescribeInstancesRequest request = DescribeInstancesRequest.builder()
+                    .instanceIds(instanceId)
+                    .build();
+
+            DescribeInstancesResponse response = ec2Client.describeInstances(request);
+
+            if (response.reservations().isEmpty() ||
+                    response.reservations().get(0).instances().isEmpty()) {
+                return "unknown";
+            }
+
+            return response.reservations().get(0)
+                    .instances().get(0)
+                    .state().nameAsString();
+
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    // Cost calculation
     private double calculateMonthlyCost(int size, String volumeType){
 
         double pricePerGB;

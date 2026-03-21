@@ -41,17 +41,18 @@ public class S3Service {
 
                 String bucketName = bucket.name();
 
-                // 🔥 Get real storage from CloudWatch
+                // Get real storage from CloudWatch
                 double storageGB = getBucketSizeFromCloudWatch(bucketName);
 
                 // Fallback if CloudWatch returns 0
-                if (storageGB == 0) {
-                    storageGB = getEstimatedStorage(bucketName);
-                }
 
                 double monthlyCost = calculateCost(storageGB);
 
                 String recommendation = generateRecommendation(storageGB);
+
+                if (monthlyCost > 20) {
+                    recommendation += " | High cost bucket - prioritize optimization";
+                }
 
                 totalStorage += storageGB;
                 totalCost += monthlyCost;
@@ -112,27 +113,22 @@ public class S3Service {
 
             if (!response.datapoints().isEmpty()) {
 
-                double bytes = response.datapoints().get(0).average();
+                double bytes = response.datapoints().stream()
+                        .mapToDouble(Datapoint::average)
+                        .max()
+                        .orElse(0);
 
                 // Convert bytes → GB
                 return bytes / (1024 * 1024 * 1024);
             }
 
         } catch (Exception e) {
-            System.out.println("CloudWatch error for bucket: " + bucketName);
+            System.err.println("CloudWatch error for bucket: " + bucketName);
         }
 
         return 0;
     }
 
-    /* =========================
-       FALLBACK STORAGE (SAFE)
-    ========================= */
-    private double getEstimatedStorage(String bucketName) {
-
-        // Simple estimation logic (temporary)
-        return 1 + (bucketName.length() % 5);
-    }
 
     /* =========================
        COST CALCULATION
@@ -149,14 +145,21 @@ public class S3Service {
     ========================= */
     private String generateRecommendation(double storageGB) {
 
-        if (storageGB > 5) {
-            return "Apply lifecycle policy to reduce storage cost (Glacier / IA)";
+        if (storageGB == 0) {
+            return "No storage data available - verify bucket metrics or usage";
+        }
+
+        if (storageGB > 50) {
+            return "High storage usage - apply lifecycle policies or move data to Glacier";
+        }
+        else if (storageGB > 5) {
+            return "Moderate storage - consider lifecycle optimization";
         }
         else if (storageGB > 1) {
-            return "Monitor bucket usage for optimization";
+            return "Storage usage normal - monitor periodically";
         }
         else {
-            return "Bucket size normal";
+            return "Very low storage - minimal cost";
         }
     }
 }

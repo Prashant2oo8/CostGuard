@@ -142,26 +142,48 @@ document.addEventListener("DOMContentLoaded", function () {
             /* =========================
                INSIGHTS SECTION
             ========================= */
+
             const insightsContainer = document.getElementById("insightsContainer");
 
             if (insightsContainer) {
 
                 insightsContainer.innerHTML = "";
 
-                // Normal insights
-                data.optimizationInsights.forEach(insight => {
-                    insightsContainer.innerHTML += `
+                if (data.optimizationInsights && data.optimizationInsights.length > 0) {
+
+                    data.optimizationInsights.forEach(insight => {
+                        insightsContainer.innerHTML += `
+                            <div class="insight">
+                                ${insight}
+                            </div>
+                        `;
+                    });
+
+                } else {
+                    insightsContainer.innerHTML = `
                         <div class="insight">
-                            ${insight}
+                            All resources are already optimized
                         </div>
                     `;
-                });
+                }
+
+                // Only ONE max service logic
+                const maxService = Object.entries(data.serviceCostBreakdown)
+                    .reduce((a, b) => a[1] > b[1] ? a : b);
+
+                insightsContainer.innerHTML += `
+                    <div class="insight">
+                        Highest cost service: ${maxService[0].toUpperCase()}
+                    </div>
+                `;
+            }
 
             /* =========================
                MAIN PROBLEM SERVICE
             ========================= */
 
-            const maxService = Object.entries(data.serviceCostBreakdown)
+            if (insightsContainer) {
+                const maxService = Object.entries(data.serviceCostBreakdown)
                     .reduce((a, b) => a[1] > b[1] ? a : b);
 
                 const serviceName = maxService[0].toUpperCase();
@@ -172,7 +194,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     </div>
                 `;
             }
-
 
             /* =========================
                TOP EXPENSIVE RESOURCES
@@ -195,10 +216,19 @@ document.addEventListener("DOMContentLoaded", function () {
                     `;
                 });
             }
+
+            if (data.topExpensiveResources.length === 0) {
+                expensiveContainer.innerHTML = `
+                    <div class="recommendation low">
+                        <div class="rec-title">NO EXPENSIVE RESOURCES</div>
+                        <div class="rec-desc">All services are cost-efficient</div>
+                    </div>
+                `;
+            }
+
             /* =========================
                   TOP Wasteful  RESOURCES
                  ========================= */
-
 
             const wastefulContainer = document.getElementById("wastefulContainer");
 
@@ -218,105 +248,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
             }
 
-            /* =========================
-               RECOMMENDATIONS
-            ========================= */
-
-            const recContainer = document.getElementById("recommendationsContainer");
-            recContainer.innerHTML = "";
-
-            // EC2
-            data.topWastefulResources.forEach(r => {
-                recContainer.innerHTML += `
-                    <div class="recommendation high">
-                        <div>
-                            <div class="rec-title">OPTIMIZE EC2 INSTANCE</div>
-
-                            <div class="rec-desc">
-                                <b>Instance:</b> ${r.name}<br>
-                                <b>Issue:</b> ${r.reason}<br>
-                                <b>Action:</b> Stop or downsize this instance
-                            </div>
-                        </div>
-
-                        <div class="rec-saving">$${r.potentialSaving}</div>
-                    </div>
-                `;
-            });
-
-            // EBS
-            data.ebsVolumes.forEach(v => {
-                if (v.state === "available") {
-                    recContainer.innerHTML += `
-                        <div class="recommendation medium">
-                            <div>
-                                <div class="rec-title">EBS: ${v.volumeId}</div>
-                                <div class="rec-desc">${v.recommendation}</div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-
-            // S3
-            data.s3Buckets.forEach(b => {
-                if (b.storageGB > 5) {
-                    recContainer.innerHTML += `
-                        <div class="recommendation low">
-                            <div>
-                                <div class="rec-title">S3: ${b.bucketName}</div>
-                                <div class="rec-desc">${b.recommendation}</div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-
-            // RDS / ELB / ASG
-            if (data.rds?.status === "Not Initialized") {
-                recContainer.innerHTML += `
+            if (data.topWastefulResources.length === 0) {
+                wastefulContainer.innerHTML = `
                     <div class="recommendation low">
-                        <div>
-                            <div class="rec-title">RDS</div>
-                            <div class="rec-desc">${data.rds.reason}</div>
-                        </div>
+                        <div class="rec-title">NO WASTEFUL RESOURCES</div>
+                        <div class="rec-desc">No optimization needed</div>
                     </div>
                 `;
             }
 
-            if (data.elb?.status === "Not Initialized") {
-                recContainer.innerHTML += `
-                    <div class="recommendation low">
-                        <div>
-                            <div class="rec-title">ELB</div>
-                            <div class="rec-desc">${data.elb.reason}</div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            if (data.autoscaling?.status === "Not Initialized") {
-                recContainer.innerHTML += `
-                    <div class="recommendation low">
-                        <div>
-                            <div class="rec-title">AUTO SCALING</div>
-                            <div class="rec-desc">${data.autoscaling.reason}</div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // FALLBACK
-            if (recContainer.innerHTML === "") {
-                recContainer.innerHTML = `
-                    <div class="recommendation low">
-                        <div>
-                            <div class="rec-title">NO MAJOR OPTIMIZATION NEEDED</div>
-                            <div class="rec-desc">Your cloud resources are already optimized</div>
-                        </div>
-                    </div>
-                `;
-            }
 
         });
 });

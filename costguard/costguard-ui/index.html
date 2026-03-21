@@ -17,6 +17,7 @@
         <h2>CostGuard</h2>
 
         <ul class="sidebar-menu">
+
             <li data-page="index.html">
                 <span class="material-icons">dashboard</span>
                 <span>DASHBOARD</span>
@@ -42,8 +43,16 @@
                 <span>RDS</span>
             </li>
 
-            <li><span class="material-icons">hub</span><span>ELB</span></li>
-            <li><span class="material-icons">sync_alt</span><span>ASG</span></li>
+            <li data-page="elb.html">
+                <span class="material-icons">hub</span>
+                <span>ELB</span>
+            </li>
+
+            <li data-page="asg.html">
+                <span class="material-icons">sync_alt</span>
+                <span>ASG</span>
+            </li>
+
         </ul>
 
         <div class="theme-toggle-container">
@@ -103,34 +112,15 @@
 
         <div class="card">
             <h2>Top Recommendations</h2>
-            <div class="card">
-                <h2>Optimization Insights</h2>
-                <div id="insightsContainer"></div>
-            </div>
 
-            <div class="card">
-                <h2>Top Recommendations</h2>
+            <h3>Optimization Insights</h3>
+            <div id="insightsContainer"></div>
 
-                <div class="card">
-                    <h2>Optimization Insights</h2>
-                    <div id="insightsContainer"></div>
-                </div>
+            <h3>Top Expensive Resources</h3>
+            <div id="expensiveContainer"></div>
 
-                <div class="card">
-                    <h2>Top Expensive Resources</h2>
-                    <div id="expensiveContainer"></div>
-                </div>
-
-                <div class="card">
-                    <h2>Top Wasteful Resources</h2>
-                    <div id="wastefulContainer"></div>
-                </div>
-
-                <div class="card">
-                    <h2>Recommendations</h2>
-                    <div id="recommendationsContainer"></div>
-                </div>
-            </div>
+            <h3>Top Wasteful Resources</h3>
+            <div id="wastefulContainer"></div>
         </div>
 
     </div>

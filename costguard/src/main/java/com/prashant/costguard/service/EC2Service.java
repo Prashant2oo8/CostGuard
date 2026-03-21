@@ -28,11 +28,25 @@ public class EC2Service {
         List<EC2Instance> instances = new ArrayList<>();
         for (var reservation : response.reservations()){
             for (Instance instance: reservation.instances()){
+
                 double cpu = getCpuUtilization(instance.instanceId());
-                String recommendation = getRecommendation(cpu);
-                instances.add(new EC2Instance(instance.instanceId(), instance.instanceTypeAsString(), instance.state().nameAsString(), calculateMonthlyCost(instance.instanceTypeAsString()), cpu, recommendation));
 
+                double cost = calculateMonthlyCost(instance.instanceTypeAsString());
 
+                String recommendation = getRecommendation(
+                        cpu,
+                        instance.state().nameAsString(),
+                        cost
+                );
+
+                instances.add(new EC2Instance(
+                        instance.instanceId(),
+                        instance.instanceTypeAsString(),
+                        instance.state().nameAsString(),
+                        cost,
+                        cpu,
+                        recommendation
+                ));
             }
         }
 
@@ -43,7 +57,7 @@ public class EC2Service {
             case "t3.micro" -> 0.0104;
             case "t2.micro" -> 0.0116;
             case "t3.small" -> 0.0208;
-            default -> 0.015;
+            default -> 0.02;
         };
         return hourlyRate*730;
     }
@@ -56,26 +70,55 @@ public class EC2Service {
         GetMetricStatisticsResponse response = cloudWatchClient.getMetricStatistics(request);
 
         if (response.datapoints().isEmpty()){
-            return 0.0;
+            return -1;
         }
         return response.datapoints().stream().mapToDouble(Datapoint::average).average().orElse(0.0);
 
     }
 
-    private String getRecommendation(double cpu){
+    private String getRecommendation(double cpu, String state, double cost){
 
-        if (cpu < 10){
-            return "Stop instance (very low CPU utilization)";
+        String recommendation;
+
+        // CASE 1: No CPU data
+        if (cpu == -1) {
+            if (state.equalsIgnoreCase("stopped")) {
+                return "Instance is stopped - no CPU data available";
+            }
+            return "No CPU data available - monitor instance before taking action";
         }
+
+        // CASE 2: Stopped instance
+        if (state.equalsIgnoreCase("stopped")) {
+            recommendation = "Instance is stopped - if part of scheduled usage no action needed, otherwise consider termination";
+        }
+
+        // CASE 3: Very low CPU
+        else if (cpu < 5) {
+            recommendation = "Very low CPU utilization - consider stopping or terminating instance";
+        }
+
+        // CASE 4: Low CPU
         else if (cpu < 20){
-            return "Consider downsizing instance";
+            recommendation = "Low CPU utilization - consider downsizing instance";
         }
+
+        // CASE 5: High CPU
         else if (cpu > 80){
-            return "High utilization, consider scaling";
+            recommendation = "High utilization - consider scaling or upgrading instance";
         }
+
+        // CASE 6: Normal
         else{
-            return "Instance utilization normal";
+            recommendation = "Instance utilization is optimal";
         }
+
+        // COST PRIORITY (NEW)
+        if (cost > 50) {
+            recommendation += " | High cost instance - prioritize optimization";
+        }
+
+        return recommendation;
     }
 
 }
