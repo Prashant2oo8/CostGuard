@@ -3,9 +3,7 @@ package com.prashant.costguard.service;
 import com.prashant.costguard.model.*;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class CloudService {
@@ -39,118 +37,167 @@ public class CloudService {
         List<WasteResource> wasteResources = new ArrayList<>();
         List<String> insights = new ArrayList<>();
 
+        /* =========================
+           FETCH ALL DATA (NO DUPLICATION)
+        ========================= */
         List<EC2Instance> ec2Instances = ec2Service.getAllInstances();
-
         EbsReport ebsReport = ebsService.generateReport();
         S3Report s3Report = s3Service.generateReport();
-
         RdsReport rdsReport = rdsService.generateReport();
         ElbReport elbReport = elbService.generateReport();
         AsgReport asgReport = asgService.generateReport();
 
+        /* =========================
+           COST CALCULATION (USE SERVICE DATA)
+        ========================= */
         double ec2Cost = ec2Instances.stream()
                 .mapToDouble(EC2Instance::getMonthlyCost)
                 .sum();
 
         double ebsCost = ebsReport.getTotalMonthlyCost();
         double s3Cost = s3Report.getEstimatedMonthlyCost();
+        double rdsCost = rdsReport.getTotalCost();
+        double elbCost = elbReport.getTotalCost();
+        double asgCost = asgReport.getTotalCost();
 
-        double currentCost = ec2Cost + ebsCost + s3Cost;
+        double currentCost = ec2Cost + ebsCost + s3Cost + rdsCost + elbCost + asgCost;
 
-        double potentialSavings = 0;
+        double potentialSavings = 0; // (can later integrate OptimizationService)
 
-        for (EC2Instance instance : ec2Instances) {
+        /* =========================
+           ADD ALL RESOURCES (NO NESTED LOOP)
+        ========================= */
 
-            expensiveResources.add(
-                    new CostResource(
-                            instance.getInstanceId(),
-                            "EC2 Instance",
-                            instance.getMonthlyCost()
-                    )
-            );
+        // EC2
+        ec2Instances.forEach(i ->
+                expensiveResources.add(new CostResource(
+                        i.getInstanceId(),
+                        "EC2",
+                        i.getMonthlyCost()
+                ))
+        );
 
-            if (instance.getCpuUtilization() < 10) {
+        // EBS
+        ebsReport.getVolumes().forEach(v ->
+                expensiveResources.add(new CostResource(
+                        v.getVolumeId(),
+                        "EBS",
+                        v.getMonthlyCost()
+                ))
+        );
 
-                potentialSavings += instance.getMonthlyCost();
+        // S3
+        s3Report.getBuckets().forEach(b ->
+                expensiveResources.add(new CostResource(
+                        b.getBucketName(),
+                        "S3",
+                        b.getMonthlyCost()
+                ))
+        );
 
-                wasteResources.add(
-                        new WasteResource(
-                                instance.getInstanceId(),
-                                "Low CPU Utilization",
-                                instance.getMonthlyCost()
-                        )
-                );
+        // RDS
+        rdsReport.getDatabases().forEach(db ->
+                expensiveResources.add(new CostResource(
+                        db.getDbIdentifier(),
+                        "RDS",
+                        db.getMonthlyCost()
+                ))
+        );
 
-                insights.add(
-                        "Stop EC2 instance " + instance.getInstanceId() +
-                                " (Low CPU utilization)"
-                );
-            }
-        }
+        // ELB
+        elbReport.getLoadBalancers().forEach(lb ->
+                expensiveResources.add(new CostResource(
+                        lb.getName(),
+                        "ELB",
+                        lb.getMonthlyCost()
+                ))
+        );
 
+        // ASG
+        asgReport.getGroups().forEach(group ->
+                expensiveResources.add(new CostResource(
+                        group.getName(),
+                        "ASG",
+                        group.getMonthlyCost()
+                ))
+        );
+
+        /* =========================
+           SUMMARY
+        ========================= */
         Summary summary = new Summary(currentCost, potentialSavings);
 
+        /* =========================
+           COST BREAKDOWN
+        ========================= */
         Map<String, Double> costBreakdown = Map.of(
                 "ec2", ec2Cost,
                 "ebs", ebsCost,
                 "s3", s3Cost,
-                "rds", 0.0,
-                "elb", 0.0,
-                "autoscaling", 0.0
+                "rds", rdsCost,
+                "elb", elbCost,
+                "autoscaling", asgCost
         );
 
-        expensiveResources.sort(
-                (a, b) -> Double.compare(b.getMonthlyCost(), a.getMonthlyCost())
-        );
+        /* =========================
+           TOP EXPENSIVE (CLEAN)
+        ========================= */
+        List<CostResource> topExpensiveResources = expensiveResources.stream()
+                .sorted((a, b) -> Double.compare(b.getMonthlyCost(), a.getMonthlyCost()))
+                .limit(5)
+                .toList();
 
-        if (expensiveResources.size() > 5) {
-            expensiveResources = expensiveResources.subList(0, 5);
-        }
-
-        wasteResources.sort(
-                (a, b) -> Double.compare(b.getPotentialSaving(), a.getPotentialSaving())
-        );
-
-        if (wasteResources.size() > 5) {
-            wasteResources = wasteResources.subList(0, 5);
-        }
-
+        /* =========================
+           INSIGHTS (SMART)
+        ========================= */
         if (ebsReport.getUnusedVolumes() > 0) {
-
-            insights.add(
-                    "Delete unused EBS volumes to save storage cost"
-            );
+            insights.add("Unused EBS volumes detected - delete to save cost");
         }
 
-        for (S3Bucket bucket : s3Report.getBuckets()) {
-
-            insights.add(
-                    "Monitor S3 bucket " + bucket.getBucketName() +
-                            " for lifecycle optimization"
-            );
+        if (!s3Report.getBuckets().isEmpty()) {
+            insights.add("Apply lifecycle policies to optimize S3 storage cost");
         }
 
-        Object rdsSection = rdsReport.getDatabases().isEmpty()
+        if (ec2Cost > rdsCost && ec2Cost > s3Cost) {
+            insights.add("EC2 contributes highest cost - consider rightsizing instances");
+        }
+
+        /* =========================
+           OPTIONAL SECTIONS
+        ========================= */
+        Map<String, Object> rdsSection = rdsReport.getDatabases().isEmpty()
                 ? Map.of(
                 "status", "Not Initialized",
-                "reason", "No RDS databases found in AWS account"
+                "reason", "No RDS databases found"
         )
-                : rdsReport;
+                : Map.of(
+                "status", "Active",
+                "data", rdsReport
+        );
 
-        Object elbSection = elbReport.getLoadBalancers().isEmpty()
+        Map<String, Object> elbSection = elbReport.getLoadBalancers().isEmpty()
                 ? Map.of(
                 "status", "Not Initialized",
                 "reason", "No Load Balancers found"
         )
-                : elbReport;
+                : Map.of(
+                "status", "Active",
+                "data", elbReport
+        );
 
-        Object asgSection = asgReport.getGroups().isEmpty()
+        Map<String, Object> asgSection = asgReport.getGroups().isEmpty()
                 ? Map.of(
                 "status", "Not Initialized",
                 "reason", "No Auto Scaling Groups configured"
         )
-                : asgReport;
+                : Map.of(
+                "status", "Active",
+                "data", asgReport
+        );
 
+        /* =========================
+           FINAL RESPONSE
+        ========================= */
         return new CloudReport(
                 summary,
                 costBreakdown,
@@ -165,5 +212,4 @@ public class CloudService {
                 insights
         );
     }
-
 }

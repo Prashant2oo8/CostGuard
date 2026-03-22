@@ -41,10 +41,12 @@ public class S3Service {
 
                 String bucketName = bucket.name();
 
-                // Get real storage from CloudWatch
                 double storageGB = getBucketSizeFromCloudWatch(bucketName);
 
                 // Fallback if CloudWatch returns 0
+                if (storageGB == 0) {
+                    storageGB = 1;
+                }
 
                 double monthlyCost = calculateCost(storageGB);
 

@@ -7,14 +7,17 @@ public class RdsReport {
     private int totalDatabases;
     private double estimatedMonthlyCost;
     private List<RdsInstance> databases;
+    private double totalCost;
 
     public RdsReport(int totalDatabases,
                      double estimatedMonthlyCost,
-                     List<RdsInstance> databases) {
+                     List<RdsInstance> databases,
+                     double totalCost) {
 
         this.totalDatabases = totalDatabases;
         this.estimatedMonthlyCost = estimatedMonthlyCost;
         this.databases = databases;
+        this.totalCost = totalCost;
     }
 
     public int getTotalDatabases() {
@@ -28,4 +31,9 @@ public class RdsReport {
     public List<RdsInstance> getDatabases() {
         return databases;
     }
+
+    public double getTotalCost() {
+        return totalCost;
+    }
+
 }

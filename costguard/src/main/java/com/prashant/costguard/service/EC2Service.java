@@ -70,7 +70,7 @@ public class EC2Service {
         GetMetricStatisticsResponse response = cloudWatchClient.getMetricStatistics(request);
 
         if (response.datapoints().isEmpty()){
-            return -1;
+            return 0;
         }
         return response.datapoints().stream().mapToDouble(Datapoint::average).average().orElse(0.0);
 
@@ -81,7 +81,7 @@ public class EC2Service {
         String recommendation;
 
         // CASE 1: No CPU data
-        if (cpu == -1) {
+        if (cpu == 0) {
             if (state.equalsIgnoreCase("stopped")) {
                 return "Instance is stopped - no CPU data available";
             }

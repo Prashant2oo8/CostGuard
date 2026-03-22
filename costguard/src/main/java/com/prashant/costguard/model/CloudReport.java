@@ -19,11 +19,9 @@ public class CloudReport {
 
     private List<S3Bucket> s3Buckets;
 
-    private Object rds;
-
-    private Object elb;
-
-    private Object autoscaling;
+    private Map<String, Object> rds;
+    private Map<String, Object> elb;
+    private Map<String, Object> autoscaling;
 
     private List<String> optimizationInsights;
 
@@ -35,9 +33,9 @@ public class CloudReport {
             List<EC2Instance> ec2Instances,
             List<EbsVolume> ebsVolumes,
             List<S3Bucket> s3Buckets,
-            Object rds,
-            Object elb,
-            Object autoscaling,
+            Map<String, Object> rds,
+            Map<String, Object> elb,
+            Map<String, Object> autoscaling,
             List<String> optimizationInsights
     ) {
         this.summary = summary;
@@ -81,17 +79,9 @@ public class CloudReport {
         return s3Buckets;
     }
 
-    public Object getRds() {
-        return rds;
-    }
-
-    public Object getElb() {
-        return elb;
-    }
-
-    public Object getAutoscaling() {
-        return autoscaling;
-    }
+    public Map<String, Object> getRds() { return rds; }
+    public Map<String, Object> getElb() { return elb; }
+    public Map<String, Object> getAutoscaling() { return autoscaling; }
 
     public List<String> getOptimizationInsights() {
         return optimizationInsights;
