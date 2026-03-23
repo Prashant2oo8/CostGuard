@@ -37,8 +37,8 @@ public class AsgService {
         if (response.autoScalingGroups().isEmpty()) {
             return new AsgReport(
                     0,
-                    0,
-                    new ArrayList<>()
+                    new ArrayList<>(),
+                    0
             );
         }
 
@@ -76,8 +76,8 @@ public class AsgService {
 
         return new AsgReport(
                 groups.size(),
-                totalCost,
-                groups
+                groups,
+                totalCost
         );
     }
 

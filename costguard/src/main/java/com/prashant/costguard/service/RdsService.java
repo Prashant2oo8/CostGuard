@@ -63,8 +63,8 @@ public class RdsService {
 
         return new RdsReport(
                 databases.size(),
-                totalCost,
-                databases
+                databases,
+                totalCost
         );
     }
 

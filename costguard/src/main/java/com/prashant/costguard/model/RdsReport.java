@@ -5,27 +5,20 @@ import java.util.List;
 public class RdsReport {
 
     private int totalDatabases;
-    private double estimatedMonthlyCost;
     private List<RdsInstance> databases;
     private double totalCost;
 
     public RdsReport(int totalDatabases,
-                     double estimatedMonthlyCost,
                      List<RdsInstance> databases,
                      double totalCost) {
 
         this.totalDatabases = totalDatabases;
-        this.estimatedMonthlyCost = estimatedMonthlyCost;
         this.databases = databases;
         this.totalCost = totalCost;
     }
 
     public int getTotalDatabases() {
         return totalDatabases;
-    }
-
-    public double getEstimatedMonthlyCost() {
-        return estimatedMonthlyCost;
     }
 
     public List<RdsInstance> getDatabases() {

@@ -60,8 +60,8 @@ public class ElbService {
 
         return new ElbReport(
                 loadBalancers.size(),
-                totalCost,
-                loadBalancers
+                loadBalancers,
+                totalCost
         );
     }
 
