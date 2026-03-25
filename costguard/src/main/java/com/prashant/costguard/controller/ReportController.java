@@ -17,8 +17,8 @@ public class ReportController {
         this.ec2Service = ec2Service;
         this.reportService = reportService;
     }
-
-    @GetMapping
+    @CrossOrigin(origins = "*")
+    @GetMapping("/api/cloud/report")
     public List<ReportResponse> getReport(){
 
         List<EC2Instance> instances = ec2Service.getAllInstances();

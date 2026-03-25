@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>CostGuard Dashboard</title>
+
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body>
@@ -16,117 +16,72 @@
     <div class="sidebar">
         <h2>CostGuard</h2>
 
-        <ul class="sidebar-menu">
-
-            <li data-page="index.html">
-                <span class="material-icons">dashboard</span>
-                <span>DASHBOARD</span>
-            </li>
-
-            <li data-page="ec2.html">
-                <span class="material-icons">dns</span>
-                <span>EC2</span>
-            </li>
-
-            <li data-page="ebs.html">
-                <span class="material-icons">storage</span>
-                <span>EBS</span>
-            </li>
-
-            <li data-page="s3.html">
-                <span class="material-icons">folder</span>
-                <span>S3</span>
-            </li>
-
-            <li data-page="rds.html">
-                <span class="material-icons">storage</span>
-                <span>RDS</span>
-            </li>
-
-            <li data-page="elb.html">
-                <span class="material-icons">hub</span>
-                <span>ELB</span>
-            </li>
-
-            <li data-page="asg.html">
-                <span class="material-icons">sync_alt</span>
-                <span>ASG</span>
-            </li>
-
+        <ul class="menu">
+            <li class="active">Dashboard</li>
+            <li>EC2</li>
+            <li>EBS</li>
+            <li>S3</li>
+            <li>RDS</li>
+            <li>ELB</li>
+            <li>ASG</li>
         </ul>
 
-        <div class="theme-toggle-container">
-            <button id="themeToggle">Dark Mode</button>
+        <!-- DARK MODE BUTTON -->
+        <div class="theme-toggle">
+            <button id="themeBtn">Dark Mode</button>
         </div>
     </div>
 
     <!-- MAIN -->
-    <div class="main-content">
+    <div class="main">
 
-        <h1>CLOUD OPTIMIZATION DASHBOARD</h1>
-
-        <!-- SUMMARY -->
-        <div class="summary-container">
-
-            <div class="summary-card cost-card">
-                <h3>Current Monthly Cost</h3>
-                <p id="currentCost">-</p>
+        <!-- CARDS -->
+        <div class="cards">
+            <div class="card">
+                <h3>Current Cost</h3>
+                <p id="currentCost">--</p>
             </div>
 
-            <div class="summary-card savings-card">
-                <h3>Potential Savings</h3>
-                <p id="savings">-</p>
+            <div class="card">
+                <h3>Savings</h3>
+                <p id="savings">--</p>
             </div>
 
-            <div class="summary-card optimized-card">
-                <h3>Optimized Cost</h3>
-                <p id="optimizedCost">-</p>
-            </div>
-
-            <div class="summary-card efficiency-card">
-                <h3>Efficiency Score</h3>
-                <p id="efficiencyScore">-</p>
-            </div>
-
-            <div class="summary-card percent-card">
+            <div class="card">
                 <h3>Savings %</h3>
-                <p id="savingsPercent">-</p>
+                <p id="savingsPercent">--</p>
             </div>
-
         </div>
 
         <!-- CHARTS -->
-        <div class="charts-container">
-
-            <div class="card chart-card">
-                <h2>Service Cost Breakdown</h2>
+        <div class="charts">
+            <div class="chart-box">
+                <h3>Service Cost Breakdown</h3>
                 <canvas id="costChart"></canvas>
             </div>
 
-            <div class="card chart-card">
-                <h2>Cost vs Potential Savings</h2>
-                <canvas id="savingsChart"></canvas>
+            <div class="chart-box">
+                <h3>Cost Comparison</h3>
+                <canvas id="compareChart"></canvas>
             </div>
-
         </div>
 
-        <div class="card">
-            <h2>Top Recommendations</h2>
+        <!-- RECOMMENDATIONS -->
+        <div class="section">
+            <h3>Insights</h3>
+            <div id="insights"></div>
 
-            <h3>Optimization Insights</h3>
-            <div id="insightsContainer"></div>
+            <h3>Top Expensive</h3>
+            <div id="expensive"></div>
 
-            <h3>Top Expensive Resources</h3>
-            <div id="expensiveContainer"></div>
-
-            <h3>Top Wasteful Resources</h3>
-            <div id="wastefulContainer"></div>
+            <h3>Top Wasteful</h3>
+            <div id="wasteful"></div>
         </div>
 
     </div>
+
 </div>
 
 <script src="script.js"></script>
-
 </body>
 </html>
