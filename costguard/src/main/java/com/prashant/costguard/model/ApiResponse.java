@@ -6,7 +6,7 @@ public class ApiResponse<T> {
     private String message;
     private T data;
 
-    // Default constructor (important for Swagger/Jackson)
+    // Default constructor
     public ApiResponse() {}
 
     public ApiResponse(String status, String message, T data) {

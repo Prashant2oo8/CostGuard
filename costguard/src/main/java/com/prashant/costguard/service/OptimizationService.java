@@ -17,180 +17,299 @@ public class OptimizationService {
             List<LoadBalancerInfo> elbList,
             List<AutoScalingGroupInfo> asgList
     ) {
-
         List<OptimizationRecommendation> results = new ArrayList<>();
 
-        /* =========================
-           EC2 OPTIMIZATION (NO DUPLICATION)
-        ========================= */
-        for (EC2Instance instance : ec2List) {
+        analyzeEc2(ec2List, results);
+        analyzeEbs(ebsList, results);
+        analyzeS3(s3List, results);
+        analyzeRds(rdsList, results);
+        analyzeElb(elbList, results);
+        analyzeAsg(asgList, results);
 
-            String id = instance.getInstanceId();
+        return results;
+    }
+
+    private void analyzeEc2(List<EC2Instance> ec2List, List<OptimizationRecommendation> results) {
+        for (EC2Instance instance : ec2List) {
             double cost = instance.getMonthlyCost();
             double cpu = instance.getCpuUtilization();
             String state = instance.getState();
 
-            String rec = "EC2: " + instance.getRecommendation();
-            double saving = 0;
+            String recommendation;
+            double optimizedCost;
 
-            // Savings based on recommendation
-            if (rec.toLowerCase().contains("stop")) {
-                saving = cost;
-            }
-            else if (rec.toLowerCase().contains("downsize")) {
-                saving = cost * 0.4;
+            if (state.equalsIgnoreCase("stopped")) {
+                recommendation = "EC2: Instance already stopped";
+                optimizedCost = cost;
+            } else if (cpu < 5) {
+                recommendation = "EC2: Idle workload detected (low CPU/network) - stop instance";
+                optimizedCost = 0;
+            } else if (cpu < 30) {
+                recommendation = "EC2: Underutilized - downsize instance";
+                optimizedCost = cost * 0.5;
+            } else if (cpu <= 80) {
+                recommendation = "EC2: Steady workload - consider Savings Plan";
+                optimizedCost = cost * 0.75;
+            } else {
+                recommendation = "EC2: Overutilized - scale up, no savings from downsizing";
+                optimizedCost = cost;
             }
 
-            // Cost priority
-            if (cost > 50 && cpu < 20 && !state.equalsIgnoreCase("stopped")) {
-                rec += " | High cost - prioritize optimization";
-            }
+            double savings = calculateSavings(cost, optimizedCost);
+            updateOptimization(instance, recommendation, optimizedCost, savings);
 
-            results.add(new OptimizationRecommendation(id, rec, cpu, cost, saving));
+            results.add(new OptimizationRecommendation(
+                    instance.getInstanceId(),
+                    recommendation,
+                    cpu,
+                    cost,
+                    savings
+            ));
         }
 
         if (ec2List.isEmpty()) {
             results.add(new OptimizationRecommendation("EC2", "No EC2 instances found", 0, 0, 0));
         }
+    }
 
-        /* =========================
-           EBS OPTIMIZATION (NO DUPLICATION)
-        ========================= */
+    private void analyzeEbs(List<EbsVolume> ebsList, List<OptimizationRecommendation> results) {
         for (EbsVolume volume : ebsList) {
-
-            String id = volume.getVolumeId();
             double cost = volume.getMonthlyCost();
             String state = volume.getState();
+            String volumeType = volume.getVolumeType() == null ? "" : volume.getVolumeType().toLowerCase();
 
-            String rec = "EBS: " + volume.getRecommendation();
-            double saving = 0;
+            String recommendation;
+            double optimizedCost;
 
             if (state.equalsIgnoreCase("available")) {
-                saving = cost;
+                recommendation = "EBS: Unattached volume - snapshot and delete";
+                optimizedCost = 0;
+            } else if (volume.getRecommendation().toLowerCase().contains("low iops")
+                    || volume.getRecommendation().toLowerCase().contains("idle")) {
+                recommendation = "EBS: Very low IOPS - delete or downgrade volume";
+                optimizedCost = cost * 0.5;
+            } else if (volumeType.equals("gp2") || volumeType.equals("io1")) {
+                recommendation = "EBS: Convert to gp3 for better price-performance";
+                optimizedCost = cost * 0.75;
+            } else {
+                recommendation = "EBS: Actively used - no optimization needed";
+                optimizedCost = cost;
             }
 
-            if (cost > 10 && state.equalsIgnoreCase("available")) {
-                rec += " | High cost unused volume - delete to save cost";
-            }
+            double savings = calculateSavings(cost, optimizedCost);
+            updateOptimization(volume, recommendation, optimizedCost, savings);
 
-            results.add(new OptimizationRecommendation(id, rec, cost, cost, saving));
+            results.add(new OptimizationRecommendation(
+                    volume.getVolumeId(),
+                    recommendation,
+                    cost,
+                    cost,
+                    savings
+            ));
         }
 
         if (ebsList.isEmpty()) {
             results.add(new OptimizationRecommendation("EBS", "No EBS volumes found", 0, 0, 0));
         }
+    }
 
-        /* =========================
-           S3 OPTIMIZATION (NO DUPLICATION)
-        ========================= */
+    private void analyzeS3(List<S3Bucket> s3List, List<OptimizationRecommendation> results) {
         for (S3Bucket bucket : s3List) {
-
-            String id = bucket.getBucketName();
             double cost = bucket.getMonthlyCost();
-            double size = bucket.getStorageGB();
+            double storageGb = bucket.getStorageGB();
 
-            String rec = "S3: " + bucket.getRecommendation();
-            double saving = 0;
+            String recommendation;
+            double optimizedCost;
 
-            if (rec.toLowerCase().contains("lifecycle") ||
-                    rec.toLowerCase().contains("glacier")) {
-                saving = cost * 0.3;
+            if (storageGb < 1) {
+                recommendation = "S3: Very small bucket - no meaningful savings";
+                optimizedCost = cost;
+            } else if (storageGb < 20) {
+                recommendation = "S3: Frequently accessed data - keep STANDARD";
+                optimizedCost = cost;
+            } else if (storageGb < 100) {
+                recommendation = "S3: Infrequent access (30-90 days) - move to STANDARD_IA";
+                optimizedCost = cost * 0.6;
+            } else if (storageGb < 500) {
+                recommendation = "S3: Cold data (>90 days) - move to GLACIER";
+                optimizedCost = cost * 0.2;
+            } else {
+                recommendation = "S3: Archive data (>180 days) - move to DEEP_ARCHIVE";
+                optimizedCost = cost * 0.1;
             }
 
-            if (cost > 20) {
-                rec += " | High cost storage - optimize lifecycle";
-            }
+            double savings = calculateSavings(cost, optimizedCost);
+            updateOptimization(bucket, recommendation, optimizedCost, savings);
 
-            results.add(new OptimizationRecommendation(id, rec, size, cost, saving));
+            results.add(new OptimizationRecommendation(
+                    bucket.getBucketName(),
+                    recommendation,
+                    storageGb,
+                    cost,
+                    savings
+            ));
         }
 
         if (s3List.isEmpty()) {
             results.add(new OptimizationRecommendation("S3", "No S3 buckets found", 0, 0, 0));
         }
+    }
 
-        /* =========================
-           RDS OPTIMIZATION (NO DUPLICATION)
-        ========================= */
+    private void analyzeRds(List<RdsInstance> rdsList, List<OptimizationRecommendation> results) {
         for (RdsInstance db : rdsList) {
-
-            String id = db.getDbIdentifier();
             double cost = db.getMonthlyCost();
-            String rec = "RDS: " + db.getRecommendation();
-            double saving = 0;
+            String existingRec = db.getRecommendation().toLowerCase();
 
-            if (rec.toLowerCase().contains("stop")) {
-                saving = cost;
-            }
-            else if (rec.toLowerCase().contains("reduce") ||
-                    rec.toLowerCase().contains("downsize")) {
-                saving = cost * 0.4;
+            String recommendation;
+            double optimizedCost;
+
+            if (existingRec.contains("0 connection") || existingRec.contains("no connection")) {
+                recommendation = "RDS: Low CPU and zero connections - stop database";
+                optimizedCost = 0;
+            } else if (existingRec.contains("low") || existingRec.contains("underutilized")) {
+                recommendation = "RDS: Underutilized - downsize database instance";
+                optimizedCost = cost * 0.6;
+            } else if (existingRec.contains("steady") || existingRec.contains("optimal")) {
+                recommendation = "RDS: Steady workload - use Reserved Instance";
+                optimizedCost = cost * 0.7;
+            } else if (existingRec.contains("high") || existingRec.contains("over")) {
+                recommendation = "RDS: Overutilized - scale up, no savings";
+                optimizedCost = cost;
+            } else {
+                recommendation = "RDS: Monitor usage for optimization opportunity";
+                optimizedCost = cost;
             }
 
-            // Cost priority (without CPU)
-            if (cost > 50 && rec.toLowerCase().contains("underutilized")) {
-                rec += " | High cost DB - prioritize optimization";
-            }
+            double savings = calculateSavings(cost, optimizedCost);
+            updateOptimization(db, recommendation, optimizedCost, savings);
 
-            results.add(new OptimizationRecommendation(id, rec, cost, cost, saving));
+            results.add(new OptimizationRecommendation(
+                    db.getDbIdentifier(),
+                    recommendation,
+                    cost,
+                    cost,
+                    savings
+            ));
         }
+
         if (rdsList.isEmpty()) {
             results.add(new OptimizationRecommendation("RDS", "No RDS instances found", 0, 0, 0));
         }
+    }
 
-        /* =========================
-           ELB OPTIMIZATION (NO DUPLICATION)
-        ========================= */
+    private void analyzeElb(List<LoadBalancerInfo> elbList, List<OptimizationRecommendation> results) {
         for (LoadBalancerInfo elb : elbList) {
-
-            String id = elb.getName();
             double cost = elb.getMonthlyCost();
+            String existingRec = elb.getRecommendation().toLowerCase();
 
-            String rec = "ELB: " + elb.getRecommendation();
-            double saving = 0;
+            String recommendation;
+            double optimizedCost;
 
-            if (rec.toLowerCase().contains("delete")) {
-                saving = cost;
+            if (existingRec.contains("0 request") || existingRec.contains("no traffic") || existingRec.contains("unused")) {
+                recommendation = "ELB: No requests - delete load balancer";
+                optimizedCost = 0;
+            } else if (existingRec.contains("low")) {
+                recommendation = "ELB: Very low traffic - consolidate load balancers";
+                optimizedCost = cost * 0.5;
+            } else {
+                recommendation = "ELB: Active traffic - keep current configuration";
+                optimizedCost = cost;
             }
-            else if (rec.toLowerCase().contains("remove")) {
-                saving = cost * 0.5;
-            }
 
-            if (cost > 15 && rec.toLowerCase().contains("low")) {
-                rec += " | High cost with low traffic - optimize";
-            }
+            double savings = calculateSavings(cost, optimizedCost);
+            updateOptimization(elb, recommendation, optimizedCost, savings);
 
-            results.add(new OptimizationRecommendation(id, rec, cost, cost, saving));
+            results.add(new OptimizationRecommendation(
+                    elb.getName(),
+                    recommendation,
+                    cost,
+                    cost,
+                    savings
+            ));
         }
+
         if (elbList.isEmpty()) {
             results.add(new OptimizationRecommendation("ELB", "No load balancers found", 0, 0, 0));
         }
+    }
 
-        /* =========================
-           ASG OPTIMIZATION (NO DUPLICATION)
-        ========================= */
+    private void analyzeAsg(List<AutoScalingGroupInfo> asgList, List<OptimizationRecommendation> results) {
         for (AutoScalingGroupInfo asg : asgList) {
-
-            String id = asg.getName();
             double cost = asg.getMonthlyCost();
+            String existingRec = asg.getRecommendation().toLowerCase();
 
-            String rec = "ASG: " + asg.getRecommendation();
-            double saving = 0;
+            String recommendation;
+            double optimizedCost;
 
-            if (rec.toLowerCase().contains("reduce")) {
-                saving = cost * 0.3;
+            if (existingRec.contains("avg cpu <10") || existingRec.contains("very low")) {
+                recommendation = "ASG: Very low avg CPU - scale to minimum/zero";
+                optimizedCost = 0;
+            } else if (existingRec.contains("low") || existingRec.contains("underutilized")) {
+                recommendation = "ASG: Low avg CPU - reduce desired capacity";
+                optimizedCost = cost * 0.7;
+            } else if (existingRec.contains("high") || existingRec.contains("over")) {
+                recommendation = "ASG: High avg CPU - scale up, no savings";
+                optimizedCost = cost;
+            } else {
+                recommendation = "ASG: Capacity balanced - monitor scaling policy";
+                optimizedCost = cost;
             }
 
-            if (cost > 50 && rec.toLowerCase().contains("over")) {
-                rec += " | High cost scaling group - optimize";
-            }
+            double savings = calculateSavings(cost, optimizedCost);
+            updateOptimization(asg, recommendation, optimizedCost, savings);
 
-            results.add(new OptimizationRecommendation(id, rec, cost, cost, saving));
+            results.add(new OptimizationRecommendation(
+                    asg.getName(),
+                    recommendation,
+                    cost,
+                    cost,
+                    savings
+            ));
         }
 
         if (asgList.isEmpty()) {
             results.add(new OptimizationRecommendation("ASG", "No auto scaling groups found", 0, 0, 0));
         }
+    }
 
-        return results;
+    private double calculateSavings(double currentCost, double optimizedCost) {
+        double nonNegativeOptimized = Math.max(0, optimizedCost);
+        return Math.max(0, currentCost - nonNegativeOptimized);
+    }
+
+    private void updateOptimization(EC2Instance instance, String recommendation, double optimizedCost, double savings) {
+        instance.setRecommendation(recommendation);
+        instance.setOptimizedCost(Math.max(0, optimizedCost));
+        instance.setSavings(savings);
+    }
+
+    private void updateOptimization(EbsVolume volume, String recommendation, double optimizedCost, double savings) {
+        volume.setRecommendation(recommendation);
+        volume.setOptimizedCost(Math.max(0, optimizedCost));
+        volume.setSavings(savings);
+    }
+
+    private void updateOptimization(S3Bucket bucket, String recommendation, double optimizedCost, double savings) {
+        bucket.setRecommendation(recommendation);
+        bucket.setOptimizedCost(Math.max(0, optimizedCost));
+        bucket.setSavings(savings);
+    }
+
+    private void updateOptimization(RdsInstance db, String recommendation, double optimizedCost, double savings) {
+        db.setRecommendation(recommendation);
+        db.setOptimizedCost(Math.max(0, optimizedCost));
+        db.setSavings(savings);
+    }
+
+    private void updateOptimization(LoadBalancerInfo elb, String recommendation, double optimizedCost, double savings) {
+        elb.setRecommendation(recommendation);
+        elb.setOptimizedCost(Math.max(0, optimizedCost));
+        elb.setSavings(savings);
+    }
+
+    private void updateOptimization(AutoScalingGroupInfo asg, String recommendation, double optimizedCost, double savings) {
+        asg.setRecommendation(recommendation);
+        asg.setOptimizedCost(Math.max(0, optimizedCost));
+        asg.setSavings(savings);
     }
 }

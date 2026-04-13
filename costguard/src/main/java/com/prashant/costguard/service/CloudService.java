@@ -14,6 +14,7 @@ public class CloudService {
     private final RdsService rdsService;
     private final ElbService elbService;
     private final AsgService asgService;
+    private final OptimizationService optimizationService;
 
     public CloudService(
             EC2Service ec2Service,
@@ -21,7 +22,8 @@ public class CloudService {
             S3Service s3Service,
             RdsService rdsService,
             ElbService elbService,
-            AsgService asgService
+            AsgService asgService,
+            OptimizationService optimizationService
     ) {
         this.ec2Service = ec2Service;
         this.ebsService = ebsService;
@@ -29,6 +31,7 @@ public class CloudService {
         this.rdsService = rdsService;
         this.elbService = elbService;
         this.asgService = asgService;
+        this.optimizationService = optimizationService;
     }
 
     public CloudReport generateReport() {
@@ -47,6 +50,15 @@ public class CloudService {
         ElbReport elbReport = elbService.generateReport();
         AsgReport asgReport = asgService.generateReport();
 
+        optimizationService.analyzeAll(
+                ec2Instances,
+                ebsReport.getVolumes(),
+                s3Report.getBuckets(),
+                rdsReport.getDatabases(),
+                elbReport.getLoadBalancers(),
+                asgReport.getGroups()
+        );
+
         /* =========================
            COST CALCULATION (USE SERVICE DATA)
         ========================= */
@@ -61,8 +73,14 @@ public class CloudService {
         double asgCost = asgReport.getTotalCost();
 
         double currentCost = ec2Cost + ebsCost + s3Cost + rdsCost + elbCost + asgCost;
+        double optimizedCost = ec2Instances.stream().mapToDouble(EC2Instance::getOptimizedCost).sum()
+                + ebsReport.getVolumes().stream().mapToDouble(EbsVolume::getOptimizedCost).sum()
+                + s3Report.getBuckets().stream().mapToDouble(S3Bucket::getOptimizedCost).sum()
+                + rdsReport.getDatabases().stream().mapToDouble(RdsInstance::getOptimizedCost).sum()
+                + elbReport.getLoadBalancers().stream().mapToDouble(LoadBalancerInfo::getOptimizedCost).sum()
+                + asgReport.getGroups().stream().mapToDouble(AutoScalingGroupInfo::getOptimizedCost).sum();
 
-        double potentialSavings = 0; // (can later integrate OptimizationService)
+        double potentialSavings = Math.max(0, currentCost - optimizedCost);
 
         /* =========================
            ADD ALL RESOURCES (NO NESTED LOOP)
@@ -121,6 +139,30 @@ public class CloudService {
                         group.getMonthlyCost()
                 ))
         );
+
+        ec2Instances.stream()
+                .filter(i -> i.getSavings() > 0)
+                .forEach(i -> wasteResources.add(new WasteResource(i.getInstanceId(), i.getRecommendation(), i.getSavings())));
+        ebsReport.getVolumes().stream()
+                .filter(v -> v.getSavings() > 0)
+                .forEach(v -> wasteResources.add(new WasteResource(v.getVolumeId(), v.getRecommendation(), v.getSavings())));
+        s3Report.getBuckets().stream()
+                .filter(b -> b.getSavings() > 0)
+                .forEach(b -> wasteResources.add(new WasteResource(b.getBucketName(), b.getRecommendation(), b.getSavings())));
+        rdsReport.getDatabases().stream()
+                .filter(db -> db.getSavings() > 0)
+                .forEach(db -> wasteResources.add(new WasteResource(db.getDbIdentifier(), db.getRecommendation(), db.getSavings())));
+        elbReport.getLoadBalancers().stream()
+                .filter(lb -> lb.getSavings() > 0)
+                .forEach(lb -> wasteResources.add(new WasteResource(lb.getName(), lb.getRecommendation(), lb.getSavings())));
+        asgReport.getGroups().stream()
+                .filter(group -> group.getSavings() > 0)
+                .forEach(group -> wasteResources.add(new WasteResource(group.getName(), group.getRecommendation(), group.getSavings())));
+
+        List<WasteResource> topWastefulResources = wasteResources.stream()
+                .sorted((a, b) -> Double.compare(b.getPotentialSaving(), a.getPotentialSaving()))
+                .limit(5)
+                .toList();
 
         /* =========================
            SUMMARY
@@ -202,7 +244,7 @@ public class CloudService {
                 summary,
                 costBreakdown,
                 expensiveResources,
-                wasteResources,
+                topWastefulResources,
                 ec2Instances,
                 ebsReport.getVolumes(),
                 s3Report.getBuckets(),

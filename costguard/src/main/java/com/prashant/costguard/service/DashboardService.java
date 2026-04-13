@@ -20,7 +20,7 @@ public class DashboardService {
             List<AutoScalingGroupInfo> asgList
     ) {
 
-          // RESOURCE COUNTS
+        // RESOURCE COUNTS
 
         int totalEC2 = ec2List.size();
         int totalEBS = ebsList.size();
@@ -39,7 +39,7 @@ public class DashboardService {
         int runningEC2 = ec2State[0];
         int stoppedEC2 = ec2State[1];
 
-          // COST DISTRIBUTION
+        // COST DISTRIBUTION
 
         double ec2Cost = ec2List.stream().mapToDouble(EC2Instance::getMonthlyCost).sum();
         double ebsCost = ebsList.stream().mapToDouble(EbsVolume::getMonthlyCost).sum();
@@ -48,13 +48,13 @@ public class DashboardService {
         double elbCost = elbList.stream().mapToDouble(LoadBalancerInfo::getMonthlyCost).sum();
         double asgCost = asgList.stream().mapToDouble(AutoScalingGroupInfo::getMonthlyCost).sum();
 
-           // COST + SAVINGS
+        // COST + SAVINGS
         Map<String, Double> costData = calculateCost(recommendations);
 
         double totalCost = costData.get("total");
         double totalSavings = costData.get("savings");
 
-         //  WASTE + TOP RESOURCE
+        //  WASTE + TOP RESOURCE
 
         Map<String, Object> wasteData = calculateWaste(recommendations);
 
@@ -62,7 +62,7 @@ public class DashboardService {
         String topWasteResourceId = (String) wasteData.get("topId");
         double topWasteSaving = (double) wasteData.get("maxSaving");
 
-          // TOP COST SERVICE
+        // TOP COST SERVICE
 
         Map<String, Double> costMap = new HashMap<>();
         costMap.put("EC2", ec2Cost);
@@ -82,7 +82,7 @@ public class DashboardService {
             }
         }
 
-          // FINAL METRICS
+        // FINAL METRICS
         totalCost = round(totalCost);
         totalSavings = round(totalSavings);
 
@@ -96,7 +96,7 @@ public class DashboardService {
                 ? 0
                 : round((totalSavings / totalCost) * 100);
 
-           //SYSTEM HEALTH
+        //SYSTEM HEALTH
         String systemHealth;
 
         if (efficiencyScore > 80) {
@@ -128,7 +128,7 @@ public class DashboardService {
         cost.put("avgCostPerResource",
                 totalResources == 0 ? 0 : round(totalCost / totalResources));
 
-           // RESOURCES
+        // RESOURCES
 
         Map<String, Object> resources = new HashMap<>();
         resources.put("EC2", totalEC2);
@@ -172,7 +172,7 @@ public class DashboardService {
         return response;
     }
 
-       // HELPER METHODS
+    // HELPER METHODS
     private int calculateTotalResources(
             int ec2, int ebs, int s3, int rds, int elb, int asg
     ) {

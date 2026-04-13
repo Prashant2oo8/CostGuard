@@ -1,48 +1,87 @@
 package com.prashant.costguard.service;
 
-import com.prashant.costguard.model.*;
+import com.prashant.costguard.model.EC2Instance;
+import com.prashant.costguard.model.ReportResponse;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 public class ReportService {
 
-    public List<ReportResponse> generateReport(List<EC2Instance> instances){
+    private final OptimizationService optimizationService;
+
+    public ReportService(OptimizationService optimizationService) {
+        this.optimizationService = optimizationService;
+    }
+
+    public List<ReportResponse> generateReport(List<EC2Instance> instances) {
+
+        optimizationService.analyzeAll(
+                instances,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList()
+        );
+
+        double totalCurrentCost = instances.stream()
+                .mapToDouble(EC2Instance::getMonthlyCost)
+                .sum();
+
+        double totalOptimizedCost = instances.stream()
+                .mapToDouble(EC2Instance::getOptimizedCost)
+                .sum();
+
+        double savings = Math.max(0, totalCurrentCost - totalOptimizedCost);
+        double savingsPercentage = totalCurrentCost == 0
+                ? 0
+                : (savings / totalCurrentCost) * 100;
+        int efficiencyScore = (int) Math.max(0, Math.round(100 - savingsPercentage));
 
         List<ReportResponse> report = new ArrayList<>();
 
-        for(EC2Instance instance : instances){
+        for (EC2Instance instance : instances) {
 
-            double cpu = instance.getCpuUtilization();
-            double monthlyCost = instance.getMonthlyCost();
-
-            String recommendation;
-            double saving;
-            String recommendedType = instance.getInstanceType();
-
-            if(cpu < 5){
-                recommendation ="Stop Instance";
-                saving = monthlyCost;
-                recommendedType = "none";
-            } else if (cpu < 20) {
-                recommendation = "Downgrade instance";
-                if(instance.getInstanceType().equals("t3.small")){
-                    recommendedType = "t3.micro";
-                } else if (instance.getInstanceType().equals("t3.micro")) {
-                    recommendedType = "t2.micro";
-                }
-                saving = monthlyCost * 0.5;
-            }else{
-                recommendation = "Healthy";
-                saving = 0;
+            String recommendation = instance.getRecommendation();
+            if (instance.getSavings() > 0 && efficiencyScore < 90) {
+                recommendation += " | Priority optimization candidate";
             }
 
-            report.add(new ReportResponse(instance.getInstanceId(), instance.getInstanceType(),recommendedType, instance.getState(), cpu, monthlyCost, recommendation, saving));
-
+            report.add(new ReportResponse(
+                    instance.getInstanceId(),
+                    instance.getInstanceType(),
+                    getRecommendedType(instance.getInstanceType(), recommendation),
+                    instance.getState(),
+                    instance.getCpuUtilization(),
+                    instance.getMonthlyCost(),
+                    recommendation,
+                    instance.getSavings()
+            ));
         }
 
         return report;
+    }
+
+    private String getRecommendedType(String currentType, String recommendation) {
+        String lowerRecommendation = recommendation.toLowerCase();
+
+        if (lowerRecommendation.contains("stop")) {
+            return "none";
+        }
+
+        if (lowerRecommendation.contains("downsize") || lowerRecommendation.contains("downgrade")) {
+            if ("t3.small".equals(currentType)) {
+                return "t3.micro";
+            }
+            if ("t3.micro".equals(currentType)) {
+                return "t2.micro";
+            }
+        }
+
+        return currentType;
     }
 }

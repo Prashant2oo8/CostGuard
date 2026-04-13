@@ -67,7 +67,7 @@ public class OptimizationController {
         } catch (Exception e) {
             e.printStackTrace();
 
-              // SAFE FALLBACK RESPONSE
+            // SAFE FALLBACK RESPONSE
             return List.of(
                     new OptimizationRecommendation(
                             "SYSTEM",

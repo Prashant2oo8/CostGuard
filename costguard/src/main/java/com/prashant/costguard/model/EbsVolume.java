@@ -8,6 +8,8 @@ public class EbsVolume {
     private double monthlyCost;
     private String recommendation;
     private String volumeType;
+    private double optimizedCost;
+    private double savings;
 
     public EbsVolume(String volumeId, int size, String state, String volumeType,
                      double monthlyCost, String recommendation) {
@@ -18,6 +20,8 @@ public class EbsVolume {
         this.volumeType = volumeType;
         this.monthlyCost = monthlyCost;
         this.recommendation = recommendation;
+        this.optimizedCost = monthlyCost;
+        this.savings = 0;
     }
 
     public String getVolumeId() {
@@ -42,5 +46,25 @@ public class EbsVolume {
 
     public String getRecommendation() {
         return recommendation;
+    }
+
+    public double getOptimizedCost() {
+        return optimizedCost;
+    }
+
+    public double getSavings() {
+        return savings;
+    }
+
+    public void setRecommendation(String recommendation) {
+        this.recommendation = recommendation;
+    }
+
+    public void setOptimizedCost(double optimizedCost) {
+        this.optimizedCost = optimizedCost;
+    }
+
+    public void setSavings(double savings) {
+        this.savings = savings;
     }
 }

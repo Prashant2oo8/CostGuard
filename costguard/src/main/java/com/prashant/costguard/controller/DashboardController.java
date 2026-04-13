@@ -44,7 +44,7 @@ public class DashboardController {
     @GetMapping
     public Map<String, Object> getDashboard() {
 
-           // FETCH ALL RESOURCES
+        // FETCH ALL RESOURCES
         List<EC2Instance> ec2List = ec2Service.getAllInstances();
         List<EbsVolume> ebsList = ebsService.generateReport().getVolumes();
         List<S3Bucket> s3List = s3Service.generateReport().getBuckets();
