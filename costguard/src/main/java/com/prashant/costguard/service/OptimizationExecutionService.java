@@ -5,7 +5,10 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.autoscaling.AutoScalingClient;
 import software.amazon.awssdk.services.autoscaling.model.UpdateAutoScalingGroupRequest;
 import software.amazon.awssdk.services.ec2.Ec2Client;
+import software.amazon.awssdk.services.ec2.model.DeleteNatGatewayRequest;
 import software.amazon.awssdk.services.ec2.model.DeleteVolumeRequest;
+import software.amazon.awssdk.services.ec2.model.DeleteVpcEndpointsRequest;
+import software.amazon.awssdk.services.ec2.model.ReleaseAddressRequest;
 import software.amazon.awssdk.services.ec2.model.StopInstancesRequest;
 import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2Client;
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DeleteLoadBalancerRequest;
@@ -31,8 +34,8 @@ public class OptimizationExecutionService {
     private final ElasticLoadBalancingV2Client elbClient;
     private final AutoScalingClient asgClient;
 
-    public OptimizationExecutionService() {
-        this.ec2Client = Ec2Client.create();
+    public OptimizationExecutionService(Ec2Client ec2Client) {
+        this.ec2Client = ec2Client;
         this.s3Client = S3Client.create();
         this.rdsClient = RdsClient.create();
         this.elbClient = ElasticLoadBalancingV2Client.create();
@@ -51,6 +54,7 @@ public class OptimizationExecutionService {
             case "RDS" -> handleRds(request);
             case "ELB" -> handleElb(request);
             case "ASG" -> handleAsg(request);
+            case "VPC" -> handleVpc(request);
             default -> throw new IllegalArgumentException("Unsupported resource type: " + request.getResourceType());
         }
     }
@@ -143,6 +147,40 @@ public class OptimizationExecutionService {
         }
     }
 
+    private void handleVpc(ActionRequest request) {
+        String action = request.getAction().trim().toUpperCase(Locale.ROOT);
+        String vpcResourceType = request.getVpcResourceType() == null
+                ? ""
+                : request.getVpcResourceType().trim().toUpperCase(Locale.ROOT);
+
+        try {
+            switch (vpcResourceType) {
+                case "EIP" -> {
+                    requireAction(request, "RELEASE_EIP");
+                    ec2Client.releaseAddress(ReleaseAddressRequest.builder()
+                            .allocationId(request.getResourceId())
+                            .build());
+                }
+                case "NAT_GATEWAY" -> {
+                    requireAction(request, "DELETE_NAT");
+                    ec2Client.deleteNatGateway(DeleteNatGatewayRequest.builder()
+                            .natGatewayId(request.getResourceId())
+                            .build());
+                }
+                case "VPC_ENDPOINT" -> {
+                    requireAction(request, "DELETE_ENDPOINT");
+                    ec2Client.deleteVpcEndpoints(DeleteVpcEndpointsRequest.builder()
+                            .vpcEndpointIds(request.getResourceId())
+                            .build());
+                }
+                case "VPC_RECOMMENDATION" -> requireAction(request, "RECOMMEND_ONLY");
+                default -> throw new IllegalArgumentException("Unsupported VPC resource type: " + request.getVpcResourceType());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to execute VPC action " + action + " for resource: " + request.getResourceId(), e);
+        }
+    }
+
     private void validateRequest(ActionRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Request body is required");
@@ -155,6 +193,9 @@ public class OptimizationExecutionService {
         }
         if (isBlank(request.getAction())) {
             throw new IllegalArgumentException("action is required");
+        }
+        if ("VPC".equalsIgnoreCase(request.getResourceType()) && isBlank(request.getVpcResourceType())) {
+            throw new IllegalArgumentException("vpcResourceType is required when resourceType is VPC");
         }
     }
 

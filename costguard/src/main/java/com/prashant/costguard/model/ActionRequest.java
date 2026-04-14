@@ -5,6 +5,7 @@ public class ActionRequest {
     private String resourceType;
     private String resourceId;
     private String action;
+    private String vpcResourceType;
 
     public ActionRequest() {
     }
@@ -13,6 +14,13 @@ public class ActionRequest {
         this.resourceType = resourceType;
         this.resourceId = resourceId;
         this.action = action;
+    }
+
+    public ActionRequest(String resourceType, String resourceId, String action, String vpcResourceType) {
+        this.resourceType = resourceType;
+        this.resourceId = resourceId;
+        this.action = action;
+        this.vpcResourceType = vpcResourceType;
     }
 
     public String getResourceType() {
@@ -37,5 +45,13 @@ public class ActionRequest {
 
     public void setAction(String action) {
         this.action = action;
+    }
+
+    public String getVpcResourceType() {
+        return vpcResourceType;
+    }
+
+    public void setVpcResourceType(String vpcResourceType) {
+        this.vpcResourceType = vpcResourceType;
     }
 }

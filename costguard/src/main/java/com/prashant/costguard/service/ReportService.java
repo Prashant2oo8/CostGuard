@@ -2,6 +2,7 @@ package com.prashant.costguard.service;
 
 import com.prashant.costguard.model.EC2Instance;
 import com.prashant.costguard.model.ReportResponse;
+import com.prashant.costguard.model.VpcInfo;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -12,9 +13,11 @@ import java.util.List;
 public class ReportService {
 
     private final OptimizationService optimizationService;
+    private final VpcService vpcService;
 
-    public ReportService(OptimizationService optimizationService) {
+    public ReportService(OptimizationService optimizationService, VpcService vpcService) {
         this.optimizationService = optimizationService;
+        this.vpcService = vpcService;
     }
 
     public List<ReportResponse> generateReport(List<EC2Instance> instances) {
@@ -35,6 +38,10 @@ public class ReportService {
         double totalOptimizedCost = instances.stream()
                 .mapToDouble(EC2Instance::getOptimizedCost)
                 .sum();
+
+        List<VpcInfo> vpcInfos = vpcService.getVpcOptimizations();
+        totalCurrentCost += vpcInfos.stream().mapToDouble(VpcInfo::getCurrentCost).sum();
+        totalOptimizedCost += vpcInfos.stream().mapToDouble(VpcInfo::getOptimizedCost).sum();
 
         double savings = Math.max(0, totalCurrentCost - totalOptimizedCost);
         double savingsPercentage = totalCurrentCost == 0

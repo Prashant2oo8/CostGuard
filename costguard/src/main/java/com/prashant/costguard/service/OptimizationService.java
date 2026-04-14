@@ -9,6 +9,12 @@ import java.util.List;
 @Service
 public class OptimizationService {
 
+    private final VpcService vpcService;
+
+    public OptimizationService(VpcService vpcService) {
+        this.vpcService = vpcService;
+    }
+
     public List<OptimizationRecommendation> analyzeAll(
             List<EC2Instance> ec2List,
             List<EbsVolume> ebsList,
@@ -25,8 +31,26 @@ public class OptimizationService {
         analyzeRds(rdsList, results);
         analyzeElb(elbList, results);
         analyzeAsg(asgList, results);
+        analyzeVpc(results);
 
         return results;
+    }
+
+    private void analyzeVpc(List<OptimizationRecommendation> results) {
+        List<VpcInfo> vpcResults = vpcService.getVpcOptimizations();
+
+        for (VpcInfo vpcResult : vpcResults) {
+            String recommendation = "VPC: " + vpcResult.getRecommendation()
+                    + " | action=" + vpcResult.getAction();
+
+            results.add(new OptimizationRecommendation(
+                    vpcResult.getResourceId(),
+                    recommendation,
+                    vpcResult.getOptimizedCost(),
+                    vpcResult.getCurrentCost(),
+                    vpcResult.getSavings()
+            ));
+        }
     }
 
     private void analyzeEc2(List<EC2Instance> ec2List, List<OptimizationRecommendation> results) {
