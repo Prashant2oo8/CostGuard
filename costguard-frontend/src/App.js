@@ -564,19 +564,27 @@ export default function App() {
 
       const res = await fetch(EXECUTE_API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const json = await res.json();
-      if (!res.ok || json?.status === "error") {
-        throw new Error(json?.message || `Execution failed with HTTP ${res.status}`);
+      const raw = await res.text();
+      let json = null;
+      try {
+        json = raw ? JSON.parse(raw) : null;
+      } catch {
+        json = null;
       }
 
-      setToast({ type: "success", message: `Action executed for ${row.id}.` });
+      if (!res.ok || json?.success === false || json?.status === "error") {
+        const backendMessage = json?.message || json?.error || raw || `Execution failed with HTTP ${res.status}`;
+        throw new Error(backendMessage);
+      }
+
+      setToast({ type: "success", message: json?.message || `Action executed for ${row.id}.` });
       await load();
     } catch (e) {
-      setToast({ type: "error", message: `Execution failed for ${row.id}: ${e.message}` });
+      setToast({ type: "error", message: `Execution failed for ${row.id}: ${e.message || "Unknown error"}` });
     } finally {
       setExecutingId(null);
     }
