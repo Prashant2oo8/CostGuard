@@ -33,10 +33,13 @@ public class ActionRequest {
 
     public String getResourceType() { return resourceType; }
     public void setResourceType(String resourceType) { this.resourceType = resourceType; }
+
     public String getResourceId() { return resourceId; }
     public void setResourceId(String resourceId) { this.resourceId = resourceId; }
+
     public String getAction() { return action; }
     public void setAction(String action) { this.action = action; }
+
     public String getVpcResourceType() { return vpcResourceType; }
     public void setVpcResourceType(String vpcResourceType) { this.vpcResourceType = vpcResourceType; }
 }

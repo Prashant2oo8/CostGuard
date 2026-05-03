@@ -26,13 +26,20 @@ import java.util.Locale;
 @Service
 public class OptimizationExecutionService {
     private static final Logger log = LoggerFactory.getLogger(OptimizationExecutionService.class);
+
     private final Ec2Client ec2Client;
     private final S3Client s3Client;
     private final RdsClient rdsClient;
     private final ElasticLoadBalancingV2Client elbClient;
     private final AutoScalingClient asgClient;
 
-    public OptimizationExecutionService(Ec2Client ec2Client, S3Client s3Client, RdsClient rdsClient, ElasticLoadBalancingV2Client elbClient, AutoScalingClient asgClient) {
+    public OptimizationExecutionService(
+            Ec2Client ec2Client,
+            S3Client s3Client,
+            RdsClient rdsClient,
+            ElasticLoadBalancingV2Client elbClient,
+            AutoScalingClient asgClient
+    ) {
         this.ec2Client = ec2Client;
         this.s3Client = s3Client;
         this.rdsClient = rdsClient;
@@ -42,7 +49,8 @@ public class OptimizationExecutionService {
 
     public String execute(ActionRequest request) {
         validateRequest(request);
-        log.info("Execute optimization request: type={}, id={}, action={}", request.getResourceType(), request.getResourceId(), request.getAction());
+        log.info("Execute optimization request: type={}, id={}, action={}",
+                request.getResourceType(), request.getResourceId(), request.getAction());
 
         return switch (request.getResourceType().trim().toUpperCase(Locale.ROOT)) {
             case "EC2" -> stopEc2(request);
@@ -51,7 +59,10 @@ public class OptimizationExecutionService {
             case "RDS" -> stopRds(request);
             case "ELB" -> deleteElb(request);
             case "ASG" -> scaleDownAsg(request);
-            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported resourceType: " + request.getResourceType());
+            default -> throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Unsupported resourceType: " + request.getResourceType()
+            );
         };
     }
 
@@ -65,7 +76,10 @@ public class OptimizationExecutionService {
 
     private String snapshotEbs(ActionRequest r) {
         requireOneOfActions(r, "SNAPSHOT", "DELETE");
-        CreateSnapshotRequest req = CreateSnapshotRequest.builder().volumeId(r.getResourceId()).description("CostGuard optimization snapshot").build();
+        CreateSnapshotRequest req = CreateSnapshotRequest.builder()
+                .volumeId(r.getResourceId())
+                .description("CostGuard optimization snapshot")
+                .build();
         log.info("AWS request CreateSnapshot: {}", req);
         runAws(() -> ec2Client.createSnapshot(req), "ec2:CreateSnapshot", r.getResourceId());
         return "EBS snapshot created successfully";
@@ -73,61 +87,117 @@ public class OptimizationExecutionService {
 
     private String transitionS3(ActionRequest r) {
         requireAction(r, "MOVE_TO_GLACIER");
-        LifecycleRule rule = LifecycleRule.builder().id("costguard-move-to-glacier").status(ExpirationStatus.ENABLED)
+        LifecycleRule rule = LifecycleRule.builder()
+                .id("costguard-move-to-glacier")
+                .status(ExpirationStatus.ENABLED)
                 .filter(LifecycleRuleFilter.builder().prefix("").build())
-                .transitions(Transition.builder().days(0).storageClass(TransitionStorageClass.GLACIER).build()).build();
-        PutBucketLifecycleConfigurationRequest req = PutBucketLifecycleConfigurationRequest.builder().bucket(r.getResourceId())
-                .lifecycleConfiguration(BucketLifecycleConfiguration.builder().rules(List.of(rule)).build()).build();
+                .transitions(Transition.builder().days(0).storageClass(TransitionStorageClass.GLACIER).build())
+                .build();
+        PutBucketLifecycleConfigurationRequest req = PutBucketLifecycleConfigurationRequest.builder()
+                .bucket(r.getResourceId())
+                .lifecycleConfiguration(BucketLifecycleConfiguration.builder().rules(List.of(rule)).build())
+                .build();
         log.info("AWS request PutBucketLifecycleConfiguration: bucket={}", r.getResourceId());
         runAws(() -> s3Client.putBucketLifecycleConfiguration(req), "s3:PutLifecycleConfiguration", r.getResourceId());
         return "S3 lifecycle transition configured successfully";
     }
 
-    private String stopRds(ActionRequest r) { requireAction(r, "STOP");
-        StopDbInstanceRequest req = StopDbInstanceRequest.builder().dbInstanceIdentifier(r.getResourceId()).build();
+    private String stopRds(ActionRequest r) {
+        requireAction(r, "STOP");
+        StopDbInstanceRequest req = StopDbInstanceRequest.builder()
+                .dbInstanceIdentifier(r.getResourceId())
+                .build();
         log.info("AWS request StopDBInstance: {}", req);
         runAws(() -> rdsClient.stopDBInstance(req), "rds:StopDBInstance", r.getResourceId());
-        return "RDS instance stopped successfully"; }
+        return "RDS instance stopped successfully";
+    }
 
-    private String deleteElb(ActionRequest r) { requireAction(r, "DELETE");
-        DeleteLoadBalancerRequest req = DeleteLoadBalancerRequest.builder().loadBalancerArn(r.getResourceId()).build();
+    private String deleteElb(ActionRequest r) {
+        requireAction(r, "DELETE");
+        DeleteLoadBalancerRequest req = DeleteLoadBalancerRequest.builder()
+                .loadBalancerArn(r.getResourceId())
+                .build();
         log.info("AWS request DeleteLoadBalancer: {}", req);
         runAws(() -> elbClient.deleteLoadBalancer(req), "elasticloadbalancing:DeleteLoadBalancer", r.getResourceId());
-        return "Load balancer deleted successfully"; }
+        return "Load balancer deleted successfully";
+    }
 
-    private String scaleDownAsg(ActionRequest r) { requireAction(r, "SCALE_DOWN");
-        UpdateAutoScalingGroupRequest req = UpdateAutoScalingGroupRequest.builder().autoScalingGroupName(r.getResourceId()).desiredCapacity(0).minSize(0).build();
+    private String scaleDownAsg(ActionRequest r) {
+        requireAction(r, "SCALE_DOWN");
+        UpdateAutoScalingGroupRequest req = UpdateAutoScalingGroupRequest.builder()
+                .autoScalingGroupName(r.getResourceId())
+                .desiredCapacity(0)
+                .minSize(0)
+                .build();
         log.info("AWS request UpdateAutoScalingGroup: {}", req);
         runAws(() -> asgClient.updateAutoScalingGroup(req), "autoscaling:UpdateAutoScalingGroup", r.getResourceId());
-        return "Auto Scaling Group scaled down successfully"; }
+        return "Auto Scaling Group scaled down successfully";
+    }
 
     private void runAws(Runnable call, String requiredPermission, String resourceId) {
         try {
             call.run();
             log.info("AWS action success: permission={}, resourceId={}", requiredPermission, resourceId);
         } catch (AwsServiceException e) {
-            String code = e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : e.getClass().getSimpleName();
-            log.error("AWS action failed permission={}, resourceId={}, code={}, msg={}", requiredPermission, resourceId, code, e.getMessage(), e);
-            if ("AccessDenied".equalsIgnoreCase(code) || "AccessDeniedException".equalsIgnoreCase(code) || "UnauthorizedOperation".equalsIgnoreCase(code) || "AuthFailure".equalsIgnoreCase(code) || e.statusCode() == 401 || e.statusCode() == 403) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unauthorized for " + requiredPermission + " (" + code + ")");
+            String code = e.awsErrorDetails() != null
+                    ? e.awsErrorDetails().errorCode()
+                    : e.getClass().getSimpleName();
+            log.error("AWS action failed permission={}, resourceId={}, code={}, msg={}",
+                    requiredPermission, resourceId, code, e.getMessage(), e);
+
+            if ("AccessDenied".equalsIgnoreCase(code)
+                    || "AccessDeniedException".equalsIgnoreCase(code)
+                    || "UnauthorizedOperation".equalsIgnoreCase(code)
+                    || "AuthFailure".equalsIgnoreCase(code)
+                    || e.statusCode() == 401
+                    || e.statusCode() == 403) {
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Unauthorized for " + requiredPermission + " (" + code + ")"
+                );
             }
+
             if (e.statusCode() == 404) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found: " + resourceId + " (" + code + ")");
+                throw new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Resource not found: " + resourceId + " (" + code + ")"
+                );
             }
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "AWS action failed: " + e.getMessage());
+
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "AWS action failed: " + e.getMessage()
+            );
         } catch (SdkClientException e) {
             log.error("AWS SDK client error resourceId={}, msg={}", resourceId, e.getMessage(), e);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "AWS client error: " + e.getMessage());
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "AWS client error: " + e.getMessage()
+            );
         }
     }
 
     private void validateRequest(ActionRequest req) {
-        if (req == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+        if (req == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
     }
+
     private void requireAction(ActionRequest req, String expected) {
-        if (!expected.equalsIgnoreCase(req.getAction())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid action for " + req.getResourceType() + ". Expected: " + expected);
+        if (!expected.equalsIgnoreCase(req.getAction())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid action for " + req.getResourceType() + ". Expected: " + expected
+            );
+        }
     }
+
     private void requireOneOfActions(ActionRequest req, String a, String b) {
-        if (!a.equalsIgnoreCase(req.getAction()) && !b.equalsIgnoreCase(req.getAction())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid action for " + req.getResourceType() + ". Expected: " + a + " or " + b);
+        if (!a.equalsIgnoreCase(req.getAction()) && !b.equalsIgnoreCase(req.getAction())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid action for " + req.getResourceType() + ". Expected: " + a + " or " + b
+            );
+        }
     }
 }

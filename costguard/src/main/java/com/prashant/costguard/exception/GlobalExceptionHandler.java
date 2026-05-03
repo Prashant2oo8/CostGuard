@@ -15,19 +15,32 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex) {
-        String message = ex.getBindingResult().getFieldErrors().stream().findFirst().map(err -> err.getDefaultMessage()).orElse("Invalid request");
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(err -> err.getDefaultMessage())
+                .orElse("Invalid request");
         return build(HttpStatus.BAD_REQUEST, message, "ValidationError");
     }
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleStatusException(ResponseStatusException ex) {
         HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
-        return build(status, ex.getReason(), status == HttpStatus.FORBIDDEN ? "AccessDeniedException" : status.getReasonPhrase());
+        return build(
+                status,
+                ex.getReason(),
+                status == HttpStatus.FORBIDDEN ? "AccessDeniedException" : status.getReasonPhrase()
+        );
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleException(Exception ex) {
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error: " + ex.getMessage(), ex.getClass().getSimpleName());
+        return build(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Internal Server Error: " + ex.getMessage(),
+                ex.getClass().getSimpleName()
+        );
     }
 
     private ResponseEntity<Map<String, Object>> build(HttpStatus status, String message, String error) {

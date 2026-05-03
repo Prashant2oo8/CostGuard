@@ -128,6 +128,7 @@ const nav = [
 
 const fmtMoney = (n) => `$${Number(n || 0).toFixed(2)}`;
 const safeArray = (v) => (Array.isArray(v) ? v : []);
+const stateKey = (s = "") => s.toLowerCase().replaceAll("_", "-");
 
 const titleCase = (value = "") =>
   value
@@ -309,6 +310,8 @@ function getRowsForResource(page, data) {
       savings: row.savings ?? Math.max(0, (row.monthlyCost || 0) - (row.optimizedCost ?? row.monthlyCost ?? 0)),
       recommendation: row.recommendation,
       action: row.state === "running" ? "STOP" : null,
+      availableActions: row.state === "running" ? ["STOP"] : [],
+      executionState: row.state === "running" ? "actionable" : "optimized",
       meta: row.instanceType,
     }));
   }
@@ -321,6 +324,8 @@ function getRowsForResource(page, data) {
       savings: row.savings ?? 0,
       recommendation: row.recommendation,
       action: row.state === "available" ? "DELETE" : null,
+      availableActions: row.state === "available" ? ["SNAPSHOT", "DELETE"] : [],
+      executionState: row.state === "available" ? "actionable" : "optimized",
       meta: row.volumeType,
     }));
   }
@@ -333,6 +338,8 @@ function getRowsForResource(page, data) {
       savings: row.savings ?? 0,
       recommendation: row.recommendation,
       action: row.monthlyCost > 0 ? "MOVE_TO_GLACIER" : null,
+      availableActions: row.monthlyCost > 0 ? ["MOVE_TO_GLACIER"] : [],
+      executionState: row.monthlyCost > 0 ? "actionable" : "optimized",
       meta: `${row.storageGB} GB`,
     }));
   }
@@ -346,6 +353,8 @@ function getRowsForResource(page, data) {
       savings: row.savings ?? 0,
       recommendation: row.recommendation,
       action: /idle|stop/i.test(row.recommendation || "") ? "STOP" : null,
+      availableActions: /idle|stop/i.test(row.recommendation || "") ? ["STOP"] : [],
+      executionState: /idle|stop/i.test(row.recommendation || "") ? "actionable" : "optimized",
       meta: `${row.engine} • ${row.instanceClass}`,
     }));
   }
@@ -359,6 +368,8 @@ function getRowsForResource(page, data) {
       savings: row.savings ?? 0,
       recommendation: row.recommendation,
       action: row.name?.startsWith("arn:") ? "DELETE" : null,
+      availableActions: row.name?.startsWith("arn:") ? ["DELETE"] : [],
+      executionState: row.name?.startsWith("arn:") ? "actionable" : "optimized",
       meta: `${row.type} • ${row.state}`,
     }));
   }
@@ -372,6 +383,8 @@ function getRowsForResource(page, data) {
       savings: row.savings ?? 0,
       recommendation: row.recommendation,
       action: /reduce|idle|scale/i.test(row.recommendation || "") ? "SCALE_DOWN" : null,
+      availableActions: /reduce|idle|scale/i.test(row.recommendation || "") ? ["SCALE_DOWN"] : [],
+      executionState: /reduce|idle|scale/i.test(row.recommendation || "") ? "actionable" : "optimized",
       meta: `Desired ${row.desiredCapacity} (min ${row.minSize}, max ${row.maxSize})`,
     }));
   }
@@ -386,6 +399,8 @@ function getRowsForResource(page, data) {
         savings: row.savings,
         recommendation: row.recommendation,
         action: row.action && row.action !== "RECOMMEND_ONLY" ? row.action : null,
+        availableActions: row.action && row.action !== "RECOMMEND_ONLY" ? [row.action] : [],
+        executionState: row.action && row.action !== "RECOMMEND_ONLY" ? "actionable" : "optimized",
         vpcResourceType: row.resourceType,
         meta: titleCase(row.resourceType),
       }));
@@ -399,6 +414,8 @@ function getRowsForResource(page, data) {
         savings: 3.6,
         recommendation: "Unused Elastic IP detected",
         action: "RELEASE_EIP",
+        availableActions: ["RELEASE_EIP"],
+        executionState: "actionable",
         vpcResourceType: "EIP",
         meta: "Elastic IP",
       },
@@ -409,6 +426,8 @@ function getRowsForResource(page, data) {
         savings: 32,
         recommendation: "Idle NAT Gateway detected",
         action: "DELETE_NAT",
+        availableActions: ["DELETE_NAT"],
+        executionState: "actionable",
         vpcResourceType: "NAT_GATEWAY",
         meta: "NAT Gateway",
       },
@@ -419,6 +438,8 @@ function getRowsForResource(page, data) {
         savings: 7.2,
         recommendation: "Unused VPC Endpoint detected",
         action: "DELETE_ENDPOINT",
+        availableActions: ["DELETE_ENDPOINT"],
+        executionState: "actionable",
         vpcResourceType: "VPC_ENDPOINT",
         meta: "VPC Endpoint",
       },
@@ -428,7 +449,13 @@ function getRowsForResource(page, data) {
   return [];
 }
 
-function ResourcePage({ page, title, icon, rows, C, onExecute, executingId, toast }) {
+function ResourcePage({ page, title, icon, rows, C, onExecute, executingId, toast, actionSelections, onActionSelect, executionResults }) {
+  const stateCounts = rows.reduce((acc, row) => {
+    const status = executionResults[row.id]?.status || row.executionState || (row.action ? "actionable" : "optimized");
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+
   const totals = rows.reduce(
     (acc, row) => {
       acc.current += Number(row.currentCost || 0);
@@ -452,6 +479,14 @@ function ResourcePage({ page, title, icon, rows, C, onExecute, executingId, toas
         <Stat C={C} icon="✨" label="Savings" value={fmtMoney(totals.savings)} color={C.green} />
       </div>
 
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
+        {Object.entries(stateCounts).map(([k,v]) => (
+          <div key={k} style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", fontSize: 12, color: C.muted }}>
+            <span style={{ color: C.text, fontWeight: 700 }}>{titleCase(k)}</span>: {v}
+          </div>
+        ))}
+      </div>
+
       {toast && (
         <div style={{ background: `${toast.type === "success" ? C.green : C.red}18`, border: `1px solid ${toast.type === "success" ? C.green : C.red}55`, borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 13, color: toast.type === "success" ? C.green : C.red }}>
           {toast.message}
@@ -465,7 +500,7 @@ function ResourcePage({ page, title, icon, rows, C, onExecute, executingId, toas
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {["ID", "Current Cost", "Optimized Cost", "Savings", "Recommendation", "Action"].map((h) => (
+                {["ID", "Current Cost", "Optimized Cost", "Savings", "Recommendation", "State", "Action"].map((h) => (
                   <TH key={h} C={C}>{h}</TH>
                 ))}
               </tr>
@@ -480,11 +515,24 @@ function ResourcePage({ page, title, icon, rows, C, onExecute, executingId, toas
                   <TD C={C} color={C.yellow}>{fmtMoney(row.currentCost)}</TD>
                   <TD C={C} color={C.cyan}>{fmtMoney(row.optimizedCost)}</TD>
                   <TD C={C} color={C.green}>{fmtMoney(row.savings)}</TD>
-                  <TD C={C} color={C.muted}>{row.recommendation || "No recommendation"}</TD>
+                  <TD C={C} color={C.muted}>{executionResults[row.id]?.recommendation || row.recommendation || "No recommendation"}</TD>
+                  <TD C={C}><Badge s={executionResults[row.id]?.status || row.executionState || (row.action ? "actionable" : "optimized")} C={C} /></TD>
                   <TD C={C}>
-                    {row.action ? (
+                    {(executionResults[row.id]?.status === "executed" || executionResults[row.id]?.status === "optimized") ? (
+                      <span style={{ color: C.green, fontSize: 12, fontWeight: 700 }}>Action Applied</span>
+                    ) : row.action ? (
+                      <>
+                      {row.availableActions?.length > 1 && (
+                        <select
+                          value={actionSelections[row.id] || row.action}
+                          onChange={(e) => onActionSelect(row.id, e.target.value)}
+                          style={{ marginRight: 8, borderRadius: 6, background: C.cardBg, color: C.text, border: `1px solid ${C.border}`, padding: "6px 8px", fontSize: 12 }}
+                        >
+                          {row.availableActions.map((a) => <option key={a} value={a}>{a}</option>)}
+                        </select>
+                      )}
                       <button
-                        onClick={() => onExecute(page, row)}
+                        onClick={() => onExecute(page, row, actionSelections[row.id] || row.action)}
                         disabled={executingId === row.id}
                         style={{
                           background: C.accent,
@@ -500,6 +548,7 @@ function ResourcePage({ page, title, icon, rows, C, onExecute, executingId, toas
                       >
                         {executingId === row.id ? "Executing..." : "Execute"}
                       </button>
+                    </>
                     ) : (
                       <span style={{ color: C.muted, fontSize: 12, fontWeight: 600 }}>Recommendation Only</span>
                     )}
@@ -523,6 +572,8 @@ export default function App() {
   const [dark, setDark] = useState(true);
   const [executingId, setExecutingId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [actionSelections, setActionSelections] = useState({});
+  const [executionResults, setExecutionResults] = useState({});
 
   const C = THEMES[dark ? "dark" : "light"];
 
@@ -548,14 +599,14 @@ export default function App() {
     load();
   }, [load]);
 
-  const executeAction = useCallback(async (resourceType, row) => {
+  const executeAction = useCallback(async (resourceType, row, selectedAction) => {
     setToast(null);
     setExecutingId(row.id);
     try {
       const payload = {
         resourceType: resourceType.toUpperCase(),
         resourceId: row.id,
-        action: row.action,
+        action: selectedAction || row.action,
       };
 
       if (resourceType === "vpc") {
@@ -581,9 +632,11 @@ export default function App() {
         throw new Error(backendMessage);
       }
 
+      setExecutionResults((prev) => ({ ...prev, [row.id]: { status: "executed", recommendation: "Action applied successfully. No further action needed." } }));
       setToast({ type: "success", message: json?.message || `Action executed for ${row.id}.` });
       await load();
     } catch (e) {
+      setExecutionResults((prev) => ({ ...prev, [row.id]: { status: "failed", recommendation: `Execution failed: ${e.message || "Unknown error"}. Retry available.` } }));
       setToast({ type: "error", message: `Execution failed for ${row.id}: ${e.message || "Unknown error"}` });
     } finally {
       setExecutingId(null);
@@ -602,13 +655,13 @@ export default function App() {
     if (!data) return null;
 
     if (page === "dashboard") return <DashboardPage d={data} C={C} />;
-    if (page === "ec2") return <ResourcePage page="ec2" title="EC2" icon="🖥️" rows={ec2Rows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} />;
-    if (page === "ebs") return <ResourcePage page="ebs" title="EBS" icon="💾" rows={ebsRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} />;
-    if (page === "s3") return <ResourcePage page="s3" title="S3" icon="🗄️" rows={s3Rows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} />;
-    if (page === "rds") return <ResourcePage page="rds" title="RDS" icon="🛢️" rows={rdsRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} />;
-    if (page === "elb") return <ResourcePage page="elb" title="ELB" icon="⚖️" rows={elbRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} />;
-    if (page === "asg") return <ResourcePage page="asg" title="ASG" icon="🔄" rows={asgRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} />;
-    if (page === "vpc") return <ResourcePage page="vpc" title="VPC" icon="🌐" rows={vpcRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} />;
+    if (page === "ec2") return <ResourcePage page="ec2" title="EC2" icon="🖥️" rows={ec2Rows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
+    if (page === "ebs") return <ResourcePage page="ebs" title="EBS" icon="💾" rows={ebsRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
+    if (page === "s3") return <ResourcePage page="s3" title="S3" icon="🗄️" rows={s3Rows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
+    if (page === "rds") return <ResourcePage page="rds" title="RDS" icon="🛢️" rows={rdsRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
+    if (page === "elb") return <ResourcePage page="elb" title="ELB" icon="⚖️" rows={elbRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
+    if (page === "asg") return <ResourcePage page="asg" title="ASG" icon="🔄" rows={asgRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
+    if (page === "vpc") return <ResourcePage page="vpc" title="VPC" icon="🌐" rows={vpcRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
 
     return null;
   };
