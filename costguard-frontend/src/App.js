@@ -5,8 +5,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -137,7 +135,27 @@ const titleCase = (value = "") =>
     .toLowerCase()
     .replace(/\b\w/g, (s) => s.toUpperCase());
 
-const stateColor = (state, C) => ({ running: C.green, stopped: C.red, "in-use": C.accent, available: C.cyan }[state] || C.muted);
+const stateColor = (state, C) => {
+  const key = stateKey(state);
+  return ({
+    running: C.green,
+    active: C.green,
+    "in-use": C.accent,
+    available: C.cyan,
+    stopped: C.red,
+    idle: C.yellow,
+    optimized: C.green,
+    actionable: C.yellow,
+    executed: C.green,
+    failed: C.red,
+    deleted: C.red,
+    retained: C.cyan,
+    scheduled: C.cyan,
+    snapshotted: C.cyan,
+    glacier: C.cyan,
+    "standard-ia": C.cyan,
+  }[key] || C.muted);
+};
 
 const Badge = ({ s, C }) => (
   <span
@@ -149,9 +167,10 @@ const Badge = ({ s, C }) => (
       padding: "2px 8px",
       fontSize: 11,
       fontWeight: 700,
+      whiteSpace: "nowrap",
     }}
   >
-    {s}
+    {titleCase(s)}
   </span>
 );
 
@@ -194,7 +213,7 @@ const TH = ({ children, C }) => (
 );
 
 const TD = ({ children, mono, color, C }) => (
-  <td style={{ padding: "13px 14px", fontSize: 13, color: color || C.text, fontFamily: mono ? "monospace" : "inherit", borderBottom: `1px solid ${C.border}40` }}>{children}</td>
+  <td style={{ padding: "13px 14px", fontSize: 13, color: color || C.text, fontFamily: mono ? "monospace" : "inherit", borderBottom: `1px solid ${C.border}40`, verticalAlign: "top" }}>{children}</td>
 );
 
 function DashboardPage({ d, C }) {
@@ -260,34 +279,8 @@ function DashboardPage({ d, C }) {
               <Tooltip formatter={(v) => fmtMoney(v)} contentStyle={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, color: C.text }} />
             </PieChart>
           </ResponsiveContainer>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
-            {breakdown.map((b, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: 2, background: COLORS[i % COLORS.length] }} />
-                  <span style={{ fontSize: 12, color: C.muted }}>{b.name}</span>
-                </div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: COLORS[i % COLORS.length] }}>{fmtMoney(b.value)}</span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
-
-      <Section title="Top Expensive Resources" C={C}>
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-          {safeArray(d.topExpensiveResources).map((r, i) => (
-            <div key={i} style={{ flex: 1, minWidth: 160, background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
-              <div style={{ fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>#{i + 1} · {r.type}</div>
-              <div style={{ fontSize: 12, color: C.accent, fontFamily: "monospace", marginBottom: 8, wordBreak: "break-all" }}>{r.name}</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: C.yellow }}>
-                {fmtMoney(r.monthlyCost)}
-                <span style={{ fontSize: 10, color: C.muted, fontWeight: 400 }}>/mo</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Section>
 
       <Section title="Optimization Insights" C={C}>
         {safeArray(d.optimizationInsights).map((text, i) => (
@@ -303,90 +296,123 @@ function DashboardPage({ d, C }) {
 
 function getRowsForResource(page, data) {
   if (page === "ec2") {
-    return safeArray(data.ec2Instances).map((row) => ({
-      id: row.instanceId,
-      currentCost: row.monthlyCost,
-      optimizedCost: row.optimizedCost ?? row.monthlyCost,
-      savings: row.savings ?? Math.max(0, (row.monthlyCost || 0) - (row.optimizedCost ?? row.monthlyCost ?? 0)),
-      recommendation: row.recommendation,
-      action: row.state === "running" ? "STOP" : null,
-      availableActions: row.state === "running" ? ["STOP"] : [],
-      executionState: row.state === "running" ? "actionable" : "optimized",
-      meta: row.instanceType,
-    }));
+    return safeArray(data.ec2Instances).map((row) => {
+      const state = stateKey(row.state || "unknown");
+      const isRunning = state === "running";
+      const isStopped = state === "stopped";
+      const rec = row.recommendation || (isRunning ? "Idle workload detected — stop instance" : "No further action needed");
+
+      return {
+        id: row.instanceId,
+        currentCost: row.monthlyCost,
+        optimizedCost: row.optimizedCost ?? row.monthlyCost,
+        savings: row.savings ?? Math.max(0, (row.monthlyCost || 0) - (row.optimizedCost ?? row.monthlyCost ?? 0)),
+        state,
+        recommendation: rec,
+        action: isRunning ? "STOP" : null,
+        availableActions: isRunning ? ["STOP", "SCHEDULE_STOP", "SCHEDULE_START_STOP", "RIGHTSIZE_RECOMMEND"] : [],
+        executionState: isStopped ? "optimized" : (isRunning ? "actionable" : "idle"),
+        meta: row.instanceType,
+      };
+    });
   }
 
   if (page === "ebs") {
-    return safeArray(data.ebsVolumes).map((row) => ({
-      id: row.volumeId,
-      currentCost: row.monthlyCost,
-      optimizedCost: row.optimizedCost ?? row.monthlyCost,
-      savings: row.savings ?? 0,
-      recommendation: row.recommendation,
-      action: row.state === "available" ? "DELETE" : null,
-      availableActions: row.state === "available" ? ["SNAPSHOT", "DELETE"] : [],
-      executionState: row.state === "available" ? "actionable" : "optimized",
-      meta: row.volumeType,
-    }));
+    return safeArray(data.ebsVolumes).map((row) => {
+      const state = stateKey(row.state || "unknown");
+      const isAvailable = state === "available";
+      return {
+        id: row.volumeId,
+        currentCost: row.monthlyCost,
+        optimizedCost: row.optimizedCost ?? row.monthlyCost,
+        savings: row.savings ?? 0,
+        state,
+        recommendation: row.recommendation || (isAvailable ? "Unused volume detected — snapshot or delete" : "Volume attached/in-use"),
+        action: isAvailable ? "SNAPSHOT" : null,
+        availableActions: isAvailable ? ["SNAPSHOT", "SNAPSHOT_DELETE", "DELETE"] : [],
+        executionState: isAvailable ? "actionable" : "in-use",
+        meta: row.volumeType,
+      };
+    });
   }
 
   if (page === "s3") {
-    return safeArray(data.s3Buckets).map((row) => ({
-      id: row.bucketName,
-      currentCost: row.monthlyCost,
-      optimizedCost: row.optimizedCost ?? row.monthlyCost,
-      savings: row.savings ?? 0,
-      recommendation: row.recommendation,
-      action: row.monthlyCost > 0 ? "MOVE_TO_GLACIER" : null,
-      availableActions: row.monthlyCost > 0 ? ["MOVE_TO_GLACIER"] : [],
-      executionState: row.monthlyCost > 0 ? "actionable" : "optimized",
-      meta: `${row.storageGB} GB`,
-    }));
+    return safeArray(data.s3Buckets).map((row) => {
+      const state = stateKey(row.state || "standard");
+      const hasCost = Number(row.monthlyCost || 0) > 0;
+      return {
+        id: row.bucketName,
+        currentCost: row.monthlyCost,
+        optimizedCost: row.optimizedCost ?? row.monthlyCost,
+        savings: row.savings ?? 0,
+        state,
+        recommendation: row.recommendation || (hasCost ? "Rarely accessed objects — move to colder storage" : "No further action needed"),
+        action: hasCost ? "MOVE_TO_GLACIER" : null,
+        availableActions: hasCost ? ["MOVE_TO_STANDARD_IA", "MOVE_TO_GLACIER", "APPLY_LIFECYCLE_POLICY"] : [],
+        executionState: hasCost ? "actionable" : "optimized",
+        meta: `${row.storageGB} GB`,
+      };
+    });
   }
 
   if (page === "rds") {
     const dbs = safeArray(data?.rds?.data?.databases);
-    return dbs.map((row) => ({
-      id: row.dbIdentifier,
-      currentCost: row.monthlyCost,
-      optimizedCost: row.optimizedCost ?? row.monthlyCost,
-      savings: row.savings ?? 0,
-      recommendation: row.recommendation,
-      action: /idle|stop/i.test(row.recommendation || "") ? "STOP" : null,
-      availableActions: /idle|stop/i.test(row.recommendation || "") ? ["STOP"] : [],
-      executionState: /idle|stop/i.test(row.recommendation || "") ? "actionable" : "optimized",
-      meta: `${row.engine} • ${row.instanceClass}`,
-    }));
+    return dbs.map((row) => {
+      const state = stateKey(row.state || "available");
+      const idle = /idle|stop/i.test(row.recommendation || "");
+      return {
+        id: row.dbIdentifier,
+        currentCost: row.monthlyCost,
+        optimizedCost: row.optimizedCost ?? row.monthlyCost,
+        savings: row.savings ?? 0,
+        state,
+        recommendation: row.recommendation || (idle ? "Idle DB detected — stop database" : "No immediate optimization needed"),
+        action: idle ? "STOP" : null,
+        availableActions: idle ? ["STOP", "SCHEDULE_STOP", "RIGHTSIZE_RECOMMEND", "RESERVED_RECOMMEND"] : [],
+        executionState: idle ? "actionable" : "optimized",
+        meta: `${row.engine} • ${row.instanceClass}`,
+      };
+    });
   }
 
   if (page === "elb") {
     const lbs = safeArray(data?.elb?.data?.loadBalancers);
-    return lbs.map((row) => ({
-      id: row.name,
-      currentCost: row.monthlyCost,
-      optimizedCost: row.optimizedCost ?? row.monthlyCost,
-      savings: row.savings ?? 0,
-      recommendation: row.recommendation,
-      action: row.name?.startsWith("arn:") ? "DELETE" : null,
-      availableActions: row.name?.startsWith("arn:") ? ["DELETE"] : [],
-      executionState: row.name?.startsWith("arn:") ? "actionable" : "optimized",
-      meta: `${row.type} • ${row.state}`,
-    }));
+    return lbs.map((row) => {
+      const state = stateKey(row.state || "active");
+      const deletable = row.name?.startsWith("arn:");
+      return {
+        id: row.name,
+        currentCost: row.monthlyCost,
+        optimizedCost: row.optimizedCost ?? row.monthlyCost,
+        savings: row.savings ?? 0,
+        state,
+        recommendation: row.recommendation || (deletable ? "Idle LB detected — delete or keep" : "No further action needed"),
+        action: deletable ? "DELETE" : null,
+        availableActions: deletable ? ["DELETE", "KEEP"] : [],
+        executionState: deletable ? "actionable" : "optimized",
+        meta: `${row.type} • ${row.state}`,
+      };
+    });
   }
 
   if (page === "asg") {
     const groups = safeArray(data?.autoscaling?.data?.groups);
-    return groups.map((row) => ({
-      id: row.name,
-      currentCost: row.monthlyCost,
-      optimizedCost: row.optimizedCost ?? row.monthlyCost,
-      savings: row.savings ?? 0,
-      recommendation: row.recommendation,
-      action: /reduce|idle|scale/i.test(row.recommendation || "") ? "SCALE_DOWN" : null,
-      availableActions: /reduce|idle|scale/i.test(row.recommendation || "") ? ["SCALE_DOWN"] : [],
-      executionState: /reduce|idle|scale/i.test(row.recommendation || "") ? "actionable" : "optimized",
-      meta: `Desired ${row.desiredCapacity} (min ${row.minSize}, max ${row.maxSize})`,
-    }));
+    return groups.map((row) => {
+      const state = stateKey(row.state || "active");
+      const actionable = /reduce|idle|scale/i.test(row.recommendation || "");
+      return {
+        id: row.name,
+        currentCost: row.monthlyCost,
+        optimizedCost: row.optimizedCost ?? row.monthlyCost,
+        savings: row.savings ?? 0,
+        state,
+        recommendation: row.recommendation || (actionable ? "Underutilized ASG — scale down or reduce min/max" : "No immediate optimization needed"),
+        action: actionable ? "SCALE_DOWN" : null,
+        availableActions: actionable ? ["SCALE_DOWN", "REDUCE_MIN_MAX", "SCHEDULE_SCALE_DOWN"] : [],
+        executionState: actionable ? "actionable" : "optimized",
+        meta: `Desired ${row.desiredCapacity} (min ${row.minSize}, max ${row.maxSize})`,
+      };
+    });
   }
 
   if (page === "vpc") {
@@ -397,7 +423,8 @@ function getRowsForResource(page, data) {
         currentCost: row.currentCost,
         optimizedCost: row.optimizedCost,
         savings: row.savings,
-        recommendation: row.recommendation,
+        state: stateKey(row.state || "idle"),
+        recommendation: row.recommendation || "Unused VPC resource detected",
         action: row.action && row.action !== "RECOMMEND_ONLY" ? row.action : null,
         availableActions: row.action && row.action !== "RECOMMEND_ONLY" ? [row.action] : [],
         executionState: row.action && row.action !== "RECOMMEND_ONLY" ? "actionable" : "optimized",
@@ -412,6 +439,7 @@ function getRowsForResource(page, data) {
         currentCost: 3.6,
         optimizedCost: 0,
         savings: 3.6,
+        state: "idle",
         recommendation: "Unused Elastic IP detected",
         action: "RELEASE_EIP",
         availableActions: ["RELEASE_EIP"],
@@ -424,6 +452,7 @@ function getRowsForResource(page, data) {
         currentCost: 32,
         optimizedCost: 0,
         savings: 32,
+        state: "idle",
         recommendation: "Idle NAT Gateway detected",
         action: "DELETE_NAT",
         availableActions: ["DELETE_NAT"],
@@ -436,6 +465,7 @@ function getRowsForResource(page, data) {
         currentCost: 7.2,
         optimizedCost: 0,
         savings: 7.2,
+        state: "idle",
         recommendation: "Unused VPC Endpoint detected",
         action: "DELETE_ENDPOINT",
         availableActions: ["DELETE_ENDPOINT"],
@@ -449,10 +479,63 @@ function getRowsForResource(page, data) {
   return [];
 }
 
+function actionToPostState(action) {
+  const key = (action || "").toUpperCase();
+  if (key === "STOP") return "stopped";
+  if (key === "SCHEDULE_STOP" || key === "SCHEDULE_START_STOP" || key === "SCHEDULE_SCALE_DOWN") return "scheduled";
+  if (key === "SNAPSHOT") return "snapshotted";
+  if (key === "SNAPSHOT_DELETE" || key === "DELETE") return "deleted";
+  if (key === "MOVE_TO_GLACIER") return "glacier";
+  if (key === "MOVE_TO_STANDARD_IA") return "standard-ia";
+  if (key === "APPLY_LIFECYCLE_POLICY") return "lifecycle-applied";
+  if (key === "SCALE_DOWN") return "scaled-down";
+  if (key === "REDUCE_MIN_MAX") return "reduced";
+  if (key === "KEEP") return "retained";
+  if (key === "RELEASE_EIP") return "released";
+  if (key === "DELETE_NAT" || key === "DELETE_ENDPOINT") return "deleted";
+  return "optimized";
+}
+
+function postActionMessage(action) {
+  const key = (action || "").toUpperCase();
+  const map = {
+    STOP: "Instance stopped successfully",
+    SCHEDULE_STOP: "Stop schedule saved successfully",
+    SCHEDULE_START_STOP: "Start/Stop schedule saved successfully",
+    RIGHTSIZE_RECOMMEND: "Rightsize recommendation recorded",
+    SNAPSHOT: "Snapshot created successfully",
+    SNAPSHOT_DELETE: "Snapshot created and delete executed successfully",
+    DELETE: "Delete action executed successfully",
+    MOVE_TO_GLACIER: "Bucket transitioned to Glacier successfully",
+    MOVE_TO_STANDARD_IA: "Bucket transitioned to Standard-IA successfully",
+    APPLY_LIFECYCLE_POLICY: "Lifecycle policy applied successfully",
+    RESERVED_RECOMMEND: "Reserved recommendation recorded",
+    KEEP: "Resource marked as keep",
+    SCALE_DOWN: "Scaled down successfully",
+    REDUCE_MIN_MAX: "Min/Max reduced successfully",
+    SCHEDULE_SCALE_DOWN: "Scale-down schedule saved successfully",
+    RELEASE_EIP: "Elastic IP released successfully",
+    DELETE_NAT: "NAT Gateway delete initiated successfully",
+    DELETE_ENDPOINT: "VPC Endpoint delete initiated successfully",
+  };
+  return map[key] || `${action} applied successfully`;
+}
+
 function ResourcePage({ page, title, icon, rows, C, onExecute, executingId, toast, actionSelections, onActionSelect, executionResults }) {
+  const serviceStates = {
+    ec2: ["running", "stopped", "idle", "optimized"],
+    ebs: ["in-use", "available", "snapshot-pending", "optimized"],
+    s3: ["standard", "standard-ia", "glacier", "optimized"],
+    rds: ["available", "stopped", "idle", "optimized"],
+    elb: ["active", "inactive", "deleted", "optimized"],
+    asg: ["active", "scaled-down", "idle", "optimized"],
+    vpc: ["active", "idle", "optimized"],
+  };
+
   const stateCounts = rows.reduce((acc, row) => {
-    const status = executionResults[row.id]?.status || row.executionState || (row.action ? "actionable" : "optimized");
-    acc[status] = (acc[status] || 0) + 1;
+    const lifecycle = executionResults[row.id]?.state;
+    const effective = stateKey(lifecycle || row.state || row.executionState || (row.action ? "idle" : "optimized"));
+    acc[effective] = (acc[effective] || 0) + 1;
     return acc;
   }, {});
 
@@ -480,9 +563,9 @@ function ResourcePage({ page, title, icon, rows, C, onExecute, executingId, toas
       </div>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
-        {Object.entries(stateCounts).map(([k,v]) => (
+        {(serviceStates[page] || Object.keys(stateCounts)).map((k) => (
           <div key={k} style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", fontSize: 12, color: C.muted }}>
-            <span style={{ color: C.text, fontWeight: 700 }}>{titleCase(k)}</span>: {v}
+            <span style={{ color: C.text, fontWeight: 700 }}>{titleCase(k)}</span>: {stateCounts[k] || 0}
           </div>
         ))}
       </div>
@@ -500,61 +583,73 @@ function ResourcePage({ page, title, icon, rows, C, onExecute, executingId, toas
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {["ID", "Current Cost", "Optimized Cost", "Savings", "Recommendation", "State", "Action"].map((h) => (
+                {["ID", "Current Cost", "Optimized Cost", "Savings", "State", "Recommendation", "Action"].map((h) => (
                   <TH key={h} C={C}>{h}</TH>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <TD C={C} mono color={C.accent}>
-                    <div>{row.id}</div>
-                    {row.meta ? <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{row.meta}</div> : null}
-                  </TD>
-                  <TD C={C} color={C.yellow}>{fmtMoney(row.currentCost)}</TD>
-                  <TD C={C} color={C.cyan}>{fmtMoney(row.optimizedCost)}</TD>
-                  <TD C={C} color={C.green}>{fmtMoney(row.savings)}</TD>
-                  <TD C={C} color={C.muted}>{executionResults[row.id]?.recommendation || row.recommendation || "No recommendation"}</TD>
-                  <TD C={C}><Badge s={executionResults[row.id]?.status || row.executionState || (row.action ? "actionable" : "optimized")} C={C} /></TD>
-                  <TD C={C}>
-                    {(executionResults[row.id]?.status === "executed" || executionResults[row.id]?.status === "optimized") ? (
-                      <span style={{ color: C.green, fontSize: 12, fontWeight: 700 }}>Action Applied</span>
-                    ) : row.action ? (
-                      <>
-                      {row.availableActions?.length > 1 && (
-                        <select
-                          value={actionSelections[row.id] || row.action}
-                          onChange={(e) => onActionSelect(row.id, e.target.value)}
-                          style={{ marginRight: 8, borderRadius: 6, background: C.cardBg, color: C.text, border: `1px solid ${C.border}`, padding: "6px 8px", fontSize: 12 }}
-                        >
-                          {row.availableActions.map((a) => <option key={a} value={a}>{a}</option>)}
-                        </select>
+              {rows.map((row) => {
+                const selected = actionSelections[row.id] || row.action;
+                const result = executionResults[row.id];
+                const hasApplied = result?.status === "executed";
+                const isRecOnly = selected?.includes("RECOMMEND");
+
+                return (
+                  <tr key={row.id}>
+                    <TD C={C} mono color={C.accent}>
+                      <div>{row.id}</div>
+                      {row.meta ? <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{row.meta}</div> : null}
+                    </TD>
+                    <TD C={C} color={C.yellow}>{fmtMoney(row.currentCost)}</TD>
+                    <TD C={C} color={C.cyan}>{fmtMoney(row.optimizedCost)}</TD>
+                    <TD C={C} color={C.green}>{fmtMoney(row.savings)}</TD>
+                    <TD C={C}><Badge s={result?.state || row.state || row.executionState || "unknown"} C={C} /></TD>
+                    <TD C={C} color={C.muted}>{result?.recommendation || row.recommendation || "No recommendation"}</TD>
+                    <TD C={C}>
+                      {hasApplied ? (
+                        <span style={{ color: C.green, fontSize: 12, fontWeight: 700 }}>Action Applied</span>
+                      ) : row.action ? (
+                        <>
+                          {row.availableActions?.length > 1 && (
+                            <select
+                              value={selected}
+                              onChange={(e) => onActionSelect(row.id, e.target.value)}
+                              style={{ marginRight: 8, borderRadius: 6, background: C.cardBg, color: C.text, border: `1px solid ${C.border}`, padding: "6px 8px", fontSize: 12 }}
+                            >
+                              {row.availableActions.map((a) => <option key={a} value={a}>{a}</option>)}
+                            </select>
+                          )}
+
+                          {isRecOnly ? (
+                            <span style={{ color: C.muted, fontSize: 12, fontWeight: 600 }}>Recommendation Only</span>
+                          ) : (
+                            <button
+                              onClick={() => onExecute(page, row, selected)}
+                              disabled={executingId === row.id}
+                              style={{
+                                background: C.accent,
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: 8,
+                                padding: "8px 12px",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: "pointer",
+                                opacity: executingId === row.id ? 0.6 : 1,
+                              }}
+                            >
+                              {executingId === row.id ? "Executing..." : "Execute"}
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <span style={{ color: C.muted, fontSize: 12, fontWeight: 600 }}>No Action Needed</span>
                       )}
-                      <button
-                        onClick={() => onExecute(page, row, actionSelections[row.id] || row.action)}
-                        disabled={executingId === row.id}
-                        style={{
-                          background: C.accent,
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 8,
-                          padding: "8px 12px",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          opacity: executingId === row.id ? 0.6 : 1,
-                        }}
-                      >
-                        {executingId === row.id ? "Executing..." : "Execute"}
-                      </button>
-                    </>
-                    ) : (
-                      <span style={{ color: C.muted, fontSize: 12, fontWeight: 600 }}>Recommendation Only</span>
-                    )}
-                  </TD>
-                </tr>
-              ))}
+                    </TD>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -602,11 +697,13 @@ export default function App() {
   const executeAction = useCallback(async (resourceType, row, selectedAction) => {
     setToast(null);
     setExecutingId(row.id);
+
     try {
+      const action = selectedAction || row.action;
       const payload = {
         resourceType: resourceType.toUpperCase(),
         resourceId: row.id,
-        action: selectedAction || row.action,
+        action,
       };
 
       if (resourceType === "vpc") {
@@ -632,11 +729,26 @@ export default function App() {
         throw new Error(backendMessage);
       }
 
-      setExecutionResults((prev) => ({ ...prev, [row.id]: { status: "executed", recommendation: "Action applied successfully. No further action needed." } }));
+      setExecutionResults((prev) => ({
+        ...prev,
+        [row.id]: {
+          status: "executed",
+          state: actionToPostState(action),
+          recommendation: `${postActionMessage(action)}. No further action needed.`,
+        },
+      }));
+
       setToast({ type: "success", message: json?.message || `Action executed for ${row.id}.` });
       await load();
     } catch (e) {
-      setExecutionResults((prev) => ({ ...prev, [row.id]: { status: "failed", recommendation: `Execution failed: ${e.message || "Unknown error"}. Retry available.` } }));
+      setExecutionResults((prev) => ({
+        ...prev,
+        [row.id]: {
+          status: "failed",
+          state: "failed",
+          recommendation: `Execution failed: ${e.message || "Unknown error"}. Retry available.`,
+        },
+      }));
       setToast({ type: "error", message: `Execution failed for ${row.id}: ${e.message || "Unknown error"}` });
     } finally {
       setExecutingId(null);
@@ -654,14 +766,24 @@ export default function App() {
   const renderPage = () => {
     if (!data) return null;
 
+    const commonProps = {
+      C,
+      onExecute: executeAction,
+      executingId,
+      toast,
+      actionSelections,
+      onActionSelect: (id, action) => setActionSelections((p) => ({ ...p, [id]: action })),
+      executionResults,
+    };
+
     if (page === "dashboard") return <DashboardPage d={data} C={C} />;
-    if (page === "ec2") return <ResourcePage page="ec2" title="EC2" icon="🖥️" rows={ec2Rows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
-    if (page === "ebs") return <ResourcePage page="ebs" title="EBS" icon="💾" rows={ebsRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
-    if (page === "s3") return <ResourcePage page="s3" title="S3" icon="🗄️" rows={s3Rows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
-    if (page === "rds") return <ResourcePage page="rds" title="RDS" icon="🛢️" rows={rdsRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
-    if (page === "elb") return <ResourcePage page="elb" title="ELB" icon="⚖️" rows={elbRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
-    if (page === "asg") return <ResourcePage page="asg" title="ASG" icon="🔄" rows={asgRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
-    if (page === "vpc") return <ResourcePage page="vpc" title="VPC" icon="🌐" rows={vpcRows} C={C} onExecute={executeAction} executingId={executingId} toast={toast} actionSelections={actionSelections} onActionSelect={(id,action)=>setActionSelections((p)=>({...p,[id]:action}))} executionResults={executionResults} />;
+    if (page === "ec2") return <ResourcePage page="ec2" title="EC2" icon="🖥️" rows={ec2Rows} {...commonProps} />;
+    if (page === "ebs") return <ResourcePage page="ebs" title="EBS" icon="💾" rows={ebsRows} {...commonProps} />;
+    if (page === "s3") return <ResourcePage page="s3" title="S3" icon="🗄️" rows={s3Rows} {...commonProps} />;
+    if (page === "rds") return <ResourcePage page="rds" title="RDS" icon="🛢️" rows={rdsRows} {...commonProps} />;
+    if (page === "elb") return <ResourcePage page="elb" title="ELB" icon="⚖️" rows={elbRows} {...commonProps} />;
+    if (page === "asg") return <ResourcePage page="asg" title="ASG" icon="🔄" rows={asgRows} {...commonProps} />;
+    if (page === "vpc") return <ResourcePage page="vpc" title="VPC" icon="🌐" rows={vpcRows} {...commonProps} />;
 
     return null;
   };
