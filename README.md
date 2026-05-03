@@ -1,412 +1,484 @@
-CostGuard: Intelligent AWS Cost and Resource Optimization System
+# CostGuard: Intelligent AWS Cost and Resource Optimization System
 
-CostGuard: Intelligent AWS Cost and Resource Optimization System is a full-stack cloud optimization platform designed to analyze AWS infrastructure, detect cost inefficiencies, and execute optimization actions directly from a centralized cloud operations dashboard.
+CostGuard is a full-stack AWS cloud cost and resource optimization system that analyzes cloud infrastructure, detects inefficiencies, and executes optimization actions to reduce unnecessary AWS expenditure.
 
-CostGuard is built to solve a common cloud problem: organizations often pay for idle, underutilized, or misconfigured AWS resources without realizing how much cost is being wasted. CostGuard continuously analyzes cloud resources, estimates cost, detects optimization opportunities, and allows controlled execution of cost-saving actions from a single interface.
+The system identifies expensive and underutilized resources, evaluates usage patterns using CloudWatch metrics, generates intelligent optimization recommendations, and allows direct execution of cost-saving actions through an interactive dashboard.
 
-Unlike static reporting tools, CostGuard is designed as an intelligent AWS cost and resource optimization system that not only identifies waste but also enables direct optimization execution across multiple AWS services.
+Built using **Java, Spring Boot, React, and AWS SDK v2**, CostGuard functions as a practical cloud optimization platform similar to modern FinOps and cloud governance tools.
 
-Built using Java, Spring Boot, React, and AWS SDK v2, CostGuard combines cloud analysis, cost intelligence, and execution workflows into a practical FinOps-style optimization console.
+---
 
-Project Overview
+# Project Overview
 
-Modern AWS environments often contain:
+Modern AWS environments often contain idle, underutilized, or misconfigured resources that silently increase cloud costs.
 
-idle EC2 instances,
-unattached EBS volumes,
-underutilized storage,
-inactive load balancers,
-oversized scaling groups,
-and unused VPC networking resources.
+CostGuard addresses this problem by:
 
-These resources silently increase monthly cloud spend and reduce infrastructure efficiency.
+* Automatically discovering AWS resources across multiple services
+* Estimating monthly infrastructure cost
+* Analyzing utilization patterns using CloudWatch metrics
+* Detecting inefficiencies, idle resources, and edge cases
+* Calculating potential savings and efficiency score
+* Providing intelligent optimization recommendations
+* Executing optimization actions directly from the dashboard
+* Reflecting post-action state and recommendation updates in real time
 
-CostGuard addresses this by providing a complete optimization workflow:
+CostGuard is not just a reporting dashboard. It is a practical **AWS optimization execution console**.
 
-automatically discover AWS resources,
-estimate infrastructure cost,
-analyze utilization patterns using CloudWatch,
-detect inefficiencies and waste,
-generate optimization recommendations,
-execute optimization actions,
-and reflect post-action changes in real time.
+---
 
-CostGuard is not just a reporting dashboard.
-It is a practical AWS optimization execution console.
+# Technologies Used
 
-Core Objective
+## Frontend
 
-The primary goal of CostGuard: Intelligent AWS Cost and Resource Optimization System is to reduce unnecessary AWS expenditure by turning cloud cost visibility into actionable optimization decisions.
+* React
+* JavaScript
+* Recharts
+* Custom Dashboard UI
 
-The system is designed to:
+## Backend
 
-discover cloud resources across AWS services,
-estimate service-wise and resource-wise monthly cost,
-identify underutilized or idle infrastructure,
-generate optimization recommendations,
-allow direct execution of optimization actions,
-and improve overall cloud efficiency.
-Technology Stack
-Frontend
-React
-JavaScript
-Recharts
-Custom dashboard UI
-Backend
-Java 21
-Spring Boot
-Maven
-REST APIs
-AWS Integration
-AWS SDK for Java v2
-Amazon EC2
-Amazon EBS
-Amazon S3
-Amazon RDS
-Elastic Load Balancer (ELB)
-Auto Scaling Groups (ASG)
-Amazon VPC
-Amazon CloudWatch
-System Architecture
-Frontend (React Optimization Dashboard)
-        ↓
-Spring Boot Backend (Optimization Engine)
-        ↓
-AWS SDK v2 Clients
-        ↓
-AWS Services (EC2, EBS, S3, RDS, ELB, ASG, VPC, CloudWatch)
-Key Features
-1. Intelligent Cloud Resource Discovery
+* Java 21
+* Spring Boot
+* Maven
+* REST APIs
 
-CostGuard automatically discovers and analyzes AWS resources across supported services:
+## AWS Integration
 
-EC2 Instances
-EBS Volumes
-S3 Buckets
-RDS Databases
-Load Balancers
-Auto Scaling Groups
-VPC Resources
+* AWS SDK v2
+* Amazon EC2 (compute resources)
+* Amazon CloudWatch (monitoring & utilization metrics)
+* Amazon S3 (object storage analysis)
+* Amazon EBS (block storage optimization)
+* Amazon RDS (database optimization)
+* Elastic Load Balancer (ELB)
+* Auto Scaling Groups (ASG)
+* Amazon VPC (network resource optimization)
 
-This provides a complete view of infrastructure usage and cost exposure.
+---
 
-2. Cloud Cost Estimation Engine
+# Core Features
 
-CostGuard estimates monthly infrastructure cost using AWS resource usage and pricing logic.
+## 1. Cloud Resource Discovery
 
-Examples:
+CostGuard automatically discovers and analyzes AWS resources across services:
 
-EC2 cost based on instance type and runtime
-EBS cost based on volume type and size
-S3 cost based on storage usage
-RDS, ELB, and ASG cost awareness
+* EC2 Instances (virtual machines)
+* EBS Volumes (block storage)
+* S3 Buckets (object storage)
+* RDS Instances (managed databases)
+* Load Balancers (traffic distribution)
+* Auto Scaling Groups (dynamic scaling infrastructure)
+* VPC Resources (Elastic IPs, NAT Gateways, VPC Endpoints)
 
-This enables accurate service-level and resource-level cost visibility.
+This provides a complete view of infrastructure usage and cloud cost exposure.
 
-3. Service-Wise Cost Breakdown
+---
 
-CostGuard breaks total monthly cost into service-level contributions:
+## 2. Cloud Cost Estimation
 
-EC2 → Compute cost
-EBS → Storage cost
-S3 → Object storage cost
-RDS → Database cost
-ELB → Load balancing cost
-ASG → Scaling overhead
+The system estimates monthly infrastructure cost using AWS usage and pricing logic.
 
-This helps identify which AWS service contributes most to monthly spend.
+Example:
 
-4. Detailed Resource State Visibility
+EC2 Monthly Cost = Hourly Price × 730 hours
 
-A major improvement in CostGuard is real operational state visibility.
+Cost estimation is supported for:
 
-Instead of only generic totals, CostGuard shows exact resource distribution by real state for each service.
+* EC2 (based on instance type and runtime)
+* EBS (based on storage size and type)
+* S3 (based on storage usage)
+* RDS (based on database size and runtime)
+* ELB / ASG (infrastructure cost awareness)
+
+This enables service-level and resource-level cost visibility.
+
+---
+
+## 3. Service-Wise Cost Breakdown
+
+CostGuard provides a clear distribution of cloud cost across services:
+
+* EC2 → Compute cost
+* EBS → Persistent storage cost
+* S3 → Object storage cost
+* RDS → Database cost
+* ELB → Traffic handling cost
+* Auto Scaling → Scaling overhead
+
+This helps identify which AWS service contributes most to total cost.
+
+---
+
+## 4. Detailed Resource State Visibility
+
+CostGuard shows exact resource distribution by real operational state instead of only generic totals.
 
 Examples:
 
-EC2
-Running Instances
-Stopped Instances
-Idle Instances
-Optimized Instances
-EBS
-In-Use Volumes
-Available Volumes
-Snapshot Pending
-Optimized Volumes
-S3
-Standard Buckets
-IA Buckets
-Glacier Buckets
-Optimized Buckets
-RDS
-Running Databases
-Stopped Databases
-Idle Databases
-Optimized Databases
-ELB
-Active Load Balancers
-Inactive Load Balancers
-Deleted Load Balancers
-Optimized Load Balancers
-ASG
-Active Groups
-Scaled Down Groups
-Idle Groups
-Optimized Groups
-VPC
-Active Resources
-Idle Resources
-Optimized Resources
+### EC2
+* Running Instances
+* Stopped Instances
+* Idle Instances
+* Optimized Instances
+
+### EBS
+* In-Use Volumes
+* Available Volumes
+* Snapshot Pending
+* Optimized Volumes
+
+### S3
+* Standard Buckets
+* IA Buckets
+* Glacier Buckets
+* Optimized Buckets
+
+### RDS
+* Running Databases
+* Stopped Databases
+* Idle Databases
+* Optimized Databases
+
+### ELB
+* Active Load Balancers
+* Inactive Load Balancers
+* Deleted Load Balancers
+* Optimized Load Balancers
+
+### ASG
+* Active Groups
+* Scaled Down Groups
+* Idle Groups
+* Optimized Groups
+
+### VPC
+* Active Resources
+* Idle Resources
+* Optimized Resources
 
 This gives users immediate operational visibility into infrastructure state.
 
-5. Intelligent Optimization Recommendations
+---
 
-CostGuard generates service-specific optimization recommendations based on resource usage, utilization patterns, and waste signals.
+## 5. EC2 Analysis (Compute Optimization)
+
+CostGuard performs detailed EC2 analysis:
+
+* Detects instance state (running / stopped)
+* Fetches CPU utilization using CloudWatch
+* Identifies underutilized and idle instances
+* Provides recommendations such as:
+
+    * Stop idle instances
+    * Schedule instance stop
+    * Schedule start/stop
+    * Rightsize instance types
+
+Special Case Handling:
+
+* If instance is **stopped**, CPU metrics are unavailable → system avoids incorrect recommendations
+
+---
+
+## 6. EBS Analysis (Storage Optimization)
+
+For EBS volumes:
+
+* Calculates cost based on storage size
+* Detects whether volume is:
+
+    * Attached (in-use)
+    * Detached (unused)
+
+Recommendations include:
+
+* Snapshot only
+* Snapshot + delete
+* Delete unused volume
+* Optimize storage type if required
+
+---
+
+## 7. S3 Analysis (Object Storage Optimization)
+
+CostGuard analyzes S3 buckets:
+
+* Calculates storage size (GB)
+* Estimates monthly cost
+* Detects storage access patterns
+* Identifies cost optimization opportunities
+
+Recommendations:
+
+* Move to Standard-IA
+* Move to Glacier
+* Apply lifecycle policies
+* Delete unnecessary objects
+
+---
+
+## 8. RDS Analysis (Database Optimization)
+
+For RDS:
+
+* Detects presence and state of database instances
+* Identifies idle database workloads
+* Evaluates optimization opportunities
+
+Recommendations:
+
+* Stop idle database
+* Schedule stop
+* Reserved / rightsize recommendation
+
+---
+
+## 9. Load Balancer (ELB) Analysis
+
+CostGuard checks for:
+
+* Application / Network Load Balancers
+* Usage activity and operational state
+* Idle or inactive load balancers
+
+Recommendations:
+
+* Delete idle load balancer
+* Keep active load balancer
+
+---
+
+## 10. Auto Scaling Group (ASG) Analysis
+
+Analyzes scaling infrastructure:
+
+* Detects configured Auto Scaling groups
+* Identifies underutilized scaling capacity
+* Evaluates scaling inefficiencies
+
+Recommendations:
+
+* Scale down desired capacity
+* Reduce min/max capacity
+* Schedule scale down
+
+---
+
+## 11. VPC Resource Analysis
+
+CostGuard analyzes VPC-related resources for network waste:
+
+* Elastic IPs
+* NAT Gateways
+* VPC Endpoints
+
+Recommendations:
+
+* Release unused Elastic IP
+* Delete idle NAT Gateway
+* Delete unused VPC Endpoint
+
+---
+
+## 12. Intelligent Optimization Recommendations
+
+CostGuard uses context-aware logic to generate realistic optimization recommendations:
+
+* Avoids false positives
+* Handles edge cases like stopped resources
+* Differentiates between active, idle, and optimized resources
+* Provides actionable and service-aware recommendations
+
+---
+
+## 13. Multi-Action Optimization Support
+
+CostGuard supports multiple valid optimization actions per resource.
 
 Examples:
 
-stop idle EC2 instances,
-snapshot and delete unused EBS volumes,
-move infrequently accessed S3 data to Glacier,
-stop idle RDS databases,
-delete inactive load balancers,
-scale down underutilized ASGs,
-release unused VPC resources.
+* EC2 → Stop / Schedule Stop
+* EBS → Snapshot Only / Snapshot + Delete
+* S3 → Standard-IA / Glacier
+* ASG → Scale Down / Reduce Min-Max
 
-Recommendations are context-aware and avoid false positives where possible.
+Users can choose which optimization action they want to apply instead of being limited to one hardcoded action.
 
-6. Multi-Action Optimization Support
+---
 
-A major improvement in CostGuard was expanding optimization logic beyond one hardcoded action.
+## 14. Optimization Execution Engine
 
-CostGuard now supports richer optimization choices for each service.
-
-Examples:
-
-EC2
-Stop Instance
-Schedule Stop
-Schedule Start/Stop
-Rightsize Recommendation
-EBS
-Snapshot Only
-Snapshot + Delete
-Delete Unused Volume
-S3
-Move to Standard-IA
-Move to Glacier
-Apply Lifecycle Policy
-RDS
-Stop Database
-Schedule Stop
-Reserved / Rightsize Recommendation
-ELB
-Delete Idle Load Balancer
-Keep Load Balancer
-ASG
-Scale Down Desired Capacity
-Reduce Min/Max Capacity
-Schedule Scale Down
-VPC
-Release Elastic IP
-Delete NAT Gateway
-Delete Unused VPC Endpoint
-
-This makes CostGuard much more realistic and operationally useful.
-
-7. Action Selection Support
-
-Resources that support multiple optimization paths now allow action selection.
-
-Instead of forcing one hardcoded optimization action, users can choose which optimization strategy they want to execute.
-
-Examples:
-
-Snapshot only vs Snapshot + Delete
-Move to IA vs Move to Glacier
-Scale Down vs Reduce Min/Max
-
-This gives users more control over optimization behavior.
-
-8. Optimization Execution Engine
-
-CostGuard does not stop at recommendations.
-It allows direct execution of optimization actions from the dashboard.
+CostGuard allows direct execution of optimization actions from the dashboard.
 
 Execution flow:
 
-user selects action,
-frontend sends execution request,
-backend validates request,
-AWS SDK executes optimization,
-UI refreshes with updated state.
+* User selects optimization action
+* Frontend sends execution request
+* Backend validates request
+* AWS SDK executes optimization
+* UI refreshes with updated state and recommendation
 
 This transforms CostGuard from a recommendation system into a true optimization execution platform.
 
-9. Post-Action State Handling
+---
 
-A major improvement made during development was fixing post-action behavior.
+## 15. Post-Action State Handling
 
-Earlier:
+After successful execution:
 
-Execute button reappeared,
-recommendation remained stale,
-UI still behaved as if optimization was pending.
+* Resource state updates correctly
+* Recommendation updates
+* Execute is hidden when no further action is needed
+* Repeated invalid execution is prevented
 
-Now after successful execution:
+This ensures accurate post-action UX and state consistency.
 
-state updates correctly,
-recommendation updates,
-Execute is hidden when no further action is needed,
-repeated invalid execution is prevented.
+---
 
-This significantly improves operational correctness.
+## 16. Post-Action Recommendation Updates
 
-10. Post-Action Recommendation Updates
-
-Recommendations are now action-aware and state-aware.
+Recommendations are action-aware and state-aware.
 
 Before execution:
 
-“Idle workload detected — stop instance”
-“Rarely accessed objects — move to Glacier”
+* Idle workload detected — stop instance
+* Rarely accessed objects — move to Glacier
 
 After execution:
 
-“Instance stopped successfully”
-“Lifecycle policy applied successfully”
-“No further action needed”
+* Instance stopped successfully
+* Lifecycle policy applied successfully
+* No further action needed
 
-This keeps UI recommendations aligned with real infrastructure state.
+---
 
-11. Consistent Execution Lifecycle
 
-CostGuard now follows a consistent execution lifecycle:
+## 17. Cloud Dashboard APIs
 
-actionable
-executing
-executed
-optimized
-failed
+### Generate Cloud Report
+`GET /cloud/report`
 
-This controls:
+Returns the complete cloud optimization report including:
+*   Summary metrics
+*   Service-wise cost breakdown
+*   Resource state distribution
+*   Optimization recommendations
+*   Optimization insights
 
-action visibility,
-retry behavior,
-status rendering,
-post-action UX.
-12. Cloud Report API
-GET /cloud/report
-
-Generates the complete cloud optimization report.
-
-Returns:
-
-summary metrics,
-cost breakdown,
-resource lists,
-optimization recommendations,
-optimization insights.
-
-This powers the dashboard.
-
-13. Optimization Execute API
-POST /cloud/execute
+### Execute Optimization Action
+`POST /cloud/execute`
 
 Executes optimization actions on AWS resources.
 
-Accepts:
+**Accepts:**
+*   Resource type
+*   Resource ID
+*   Selected action
 
-resource type,
-resource id,
-selected action.
+---
 
-This powers direct optimization execution from the dashboard.
+## 18. AWS SDK v2 Integration
 
-14. AWS SDK v2 Integration
+CostGuard uses **AWS SDK for Java v2** to interact directly with AWS services for both analysis and optimization.
 
-CostGuard uses AWS SDK for Java v2 to interact directly with AWS services for both analysis and optimization.
+**Used for:**
+*   Resource discovery
+*   Cost analysis
+*   CloudWatch metrics
+*   Optimization execution
 
-Used for:
+---
 
-resource discovery,
-cost analysis,
-optimization execution.
+## 19. IAM-Aware Optimization Execution
 
-This enables direct cloud control through official AWS APIs.
+CostGuard requires IAM permissions for both:
+1.  **Resource analysis** (read)
+2.  **Optimization execution** (write)
 
-15. IAM-Aware Optimization Execution
+This ensures CostGuard can safely analyze and optimize AWS resources across supported services.
 
-One major backend improvement was fixing IAM write-permission issues.
+---
 
-Initially:
+## 20. Structured Error Handling
 
-report generation worked,
-execution failed.
+CostGuard returns:
+*   Clear backend responses
+*   AWS authorization failures
+*   Readable execution errors
 
-Root cause:
+This improves debugging and removes generic failures such as "Failed to fetch".
 
-IAM had read permissions,
-but lacked write permissions.
+### Example API Response
+```json
+{
+  "status": "success",
+  "message": "Cloud report generated successfully",
+  "data": {
+    "summary": {
+      "currentMonthlyCost": 8.25,
+      "potentialSavings": 2.10,
+      "optimizedMonthlyCost": 6.15,
+      "savingsPercentage": 25.45,
+      "efficiencyScore": 82
+    },
+    "serviceCostBreakdown": {
+      "ec2": 7.592,
+      "ebs": 0.64,
+      "s3": 0.023,
+      "rds": 0,
+      "elb": 0,
+      "autoscaling": 0
+    },
+    "optimizationInsights": [
+      "Apply lifecycle policies to optimize S3 storage cost",
+      "EC2 contributes highest cost - consider rightsizing instances"
+    ]
+  }
+}
+```
+---
 
-This was resolved by enabling proper IAM permissions for optimization actions across supported AWS services.
+## Project Structure
+*   **controller** → REST API endpoints
+*   **service** → business logic and optimization engine
+*   **model** → request / response structures
+*   **frontend** → React optimization dashboard
 
-16. Structured Error Handling
+---
 
-Error handling was improved to return:
+## Major Improvements Implemented
+*   Fixed broken POST execution flow
+*   Fixed frontend fetch handling
+*   Fixed CORS and browser execution issues
+*   Fixed backend execute mapping
+*   Fixed IAM write-permission failures
+*   Added detailed resource state counts
+*   Added richer optimization logic
+*   Added multi-action support
+*   Improved post-action state handling
+*   Improved recommendation updates
+*   Prevented repeated invalid executions
+*   **Upgraded CostGuard from a static recommendation dashboard into a complete optimization execution console**
 
-clear backend responses,
-AWS authorization failures,
-readable execution errors.
+---
 
-This replaced generic frontend failures such as:
+## Future Improvements
+*   AWS Cost Explorer integration
+*   Multi-account AWS monitoring
+*   Scheduled optimization automation
+*   Role-based access control
+*   Approval workflow for destructive actions
+*   Optimization history / audit logs
+*   Predictive cost forecasting
+*   ML-based optimization recommendations
 
-Failed to fetch
+---
 
-and made debugging significantly easier.
+## Author
+**Prashant Bhardwaj**  
+*MCA Major Project*
+# CostGuard: Intelligent AWS Cost and Resource Optimization System
 
-REST API Endpoints
-Generate Cloud Report
-GET /cloud/report
-Execute Optimization Action
-POST /cloud/execute
-Project Structure
-controller → REST APIs
-service    → optimization engine and AWS execution logic
-model      → request/response structures
-frontend   → React optimization dashboard
-Major Improvements Implemented
 
-During development, CostGuard was significantly improved by:
 
-fixing broken POST execution flow,
-fixing frontend fetch handling,
-fixing CORS and browser execution issues,
-fixing backend execute mapping,
-fixing IAM write-permission failures,
-improving state-aware UI,
-adding detailed resource state counts,
-adding richer optimization logic,
-adding multi-action support,
-improving post-action state handling,
-improving recommendation updates,
-preventing repeated invalid executions,
-transforming CostGuard from a static recommendation dashboard into a complete optimization execution console.
-Future Scope
-AWS Cost Explorer integration
-Multi-account AWS monitoring
-Scheduled optimization automation
-Role-based access control
-Approval workflow for destructive actions
-Optimization history / audit logs
-Predictive cost forecasting
-ML-based optimization recommendations
-Author
-
-Prashant Bhardwaj
-MCA Major Project
-
-Project Title:
-CostGuard: Intelligent AWS Cost and Resource Optimization System
